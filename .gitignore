@@ -1,4 +1,12 @@
+# Windows Venv directories
 Include
 Lib
 Scripts
+
+# Mac Venv directories
+bin
+lib
+config.pyc
+
+# Other Venv files/dirs
 pyvenv.cfg
