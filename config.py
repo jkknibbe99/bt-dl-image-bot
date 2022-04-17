@@ -3,3 +3,7 @@ login_data = {
     'username': 'joshua@engelsmahomes.com',
     'password': 'Reelbassfisher1'
 }
+
+chromedriver_data = {
+    'version': 100
+}
