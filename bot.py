@@ -1,5 +1,5 @@
-from config import login_data
-import time
+from config import login_data, chromedriver_data
+import time, os
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -8,7 +8,16 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 
 def login(ld):
-    driver = webdriver.Chrome('chromedriver')
+    # Get path to chromedriver
+    chromedriver_path = (os.path.realpath(__file__)[::-1][(os.path.realpath(__file__)[::-1].find('/')):])[::-1]
+    if os.name == 'nt':
+        chromedriver_path += 'chromedriver_100_win.exe'
+    else:
+        chromedriver_path += 'chromedriver_100_mac'
+
+    # Declare chromedriver
+    driver = webdriver.Chrome(chromedriver_path)
+   
     driver.get(ld['login_url'])
 
     # Login
