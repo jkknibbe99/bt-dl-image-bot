@@ -1,5 +1,8 @@
+from cgitb import text
 from config import login_data, chromedriver_data
 import time, os
+from tkinter import Tk, Label, Button
+from tkinter import filedialog as fd
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -7,6 +10,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
+
+# Initialize globals
+driver = None
+actionChains = None
 
 def initDriver():
     # Get path to chromedriver
@@ -17,21 +24,37 @@ def initDriver():
         chromedriver_path = (os.path.realpath(__file__)[::-1][(os.path.realpath(__file__)[::-1].find('/')+1):])[::-1] + chromedriver_data['directory'] + 'chromedriver_100_mac'
 
     # Declare chromedriver
-    chrome_options = webdriver.ChromeOptions()
-    prefs = {'download.default_directory' : '/path/to/dir'}
-    chrome_options.add_experimental_option('prefs', prefs)
-    driver = webdriver.Chrome(executable_path=chromedriver_path,chrome_options=chrome_options)
-    return driver
+    # Ask user to choose the excel file
+    window = Tk()
+    window.title('Select Downloads Destination folder')
+    window.geometry('300x300')
+    lbl = Label(window, text='Select Downloads Destination folder')
+    lbl.grid(column=0, row=0)
+    def clicked():
+        # global downloads_path
+        downloads_path = fd.askdirectory() # show an "Open" dialog box and return the path to the selected file
+        if os.name == 'nt':  # Windows
+            downloads_path = downloads_path.replace('/', '\\')
+        print(downloads_path)
+        window.destroy()
+        chrome_options = webdriver.ChromeOptions()
+        prefs = {'download.default_directory' : downloads_path}
+        chrome_options.add_experimental_option('prefs', prefs)
+        global driver
+        driver = webdriver.Chrome(executable_path=chromedriver_path,options=chrome_options)
+    btn = Button(window, text='Select Folder', command=clicked)
+    btn.grid(column=0, row=1)
+    window.mainloop()
 
 
 # Initialize actionChains. This is used to perform actions like scroling elements into view
-def initActionChains(driver):
-    actions = ActionChains(driver)
-    return actions
+def initActionChains():
+    global actionChains
+    actionChains = ActionChains(driver)
 
 
 # Log into BuilderTrend
-def login(login_data, driver):
+def login():
     # Go to the login url
     driver.get(login_data['login_url'])
 
@@ -47,7 +70,7 @@ def login(login_data, driver):
             break
 
 # Download the daily logs images
-def downloadImages(driver, actionChains):
+def downloadImages():
     # Go to daily logs page
     driver.get('https://buildertrend.net/DailyLogs/DailyLogsList.aspx')
 
@@ -94,7 +117,7 @@ def check_exists(xpath, driver):
 
 # Main method
 if __name__ == '__main__':
-    driver = initDriver()
-    actionChains = initActionChains(driver)
-    login(login_data, driver)
-    downloadImages(driver, actionChains)
+    initDriver()
+    initActionChains()
+    login()
+    downloadImages()
