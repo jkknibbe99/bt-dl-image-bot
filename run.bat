@@ -28,7 +28,7 @@ if exist Scripts (
     ECHO Virtual environment not created.
     ECHO Creating Virtual environment now...
     python -m venv .
-    Scripts\activate
+    call Scripts\activate
     pip install -r requirements.txt
     rem run bot
     python %bot_path%
