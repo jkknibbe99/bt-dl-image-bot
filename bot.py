@@ -10,9 +10,9 @@ from selenium.common.exceptions import NoSuchElementException
 def login(ld):
     # Get path to chromedriver
     chromedriver_path = (os.path.realpath(__file__)[::-1][(os.path.realpath(__file__)[::-1].find('/')):])[::-1]
-    if os.name == 'nt':
+    if os.name == 'nt':  # Windows
         chromedriver_path += 'chromedriver_100_win.exe'
-    else:
+    else:  # Mac
         chromedriver_path += 'chromedriver_100_mac'
 
     # Declare chromedriver
