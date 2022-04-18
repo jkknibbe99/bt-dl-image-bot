@@ -6,8 +6,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.action_chains import ActionChains
 
-def login(ld):
+def initDriver():
     # Get path to chromedriver
     if os.name == 'nt':  # Windows
         directory = chromedriver_data['directory'].replace('/', '\\')
@@ -16,14 +17,28 @@ def login(ld):
         chromedriver_path = (os.path.realpath(__file__)[::-1][(os.path.realpath(__file__)[::-1].find('/')+1):])[::-1] + chromedriver_data['directory'] + 'chromedriver_100_mac'
 
     # Declare chromedriver
-    driver = webdriver.Chrome(chromedriver_path)
-   
-    driver.get(ld['login_url'])
+    chrome_options = webdriver.ChromeOptions()
+    prefs = {'download.default_directory' : '/path/to/dir'}
+    chrome_options.add_experimental_option('prefs', prefs)
+    driver = webdriver.Chrome(executable_path=chromedriver_path,chrome_options=chrome_options)
+    return driver
 
-    # Login
-    driver.find_element_by_xpath('//*[@id="username"]').send_keys(ld['username'])  # Enter username
-    driver.find_element_by_xpath('//*[@id="password"]').send_keys(ld['password'])  # Enter password
-    driver.find_element_by_xpath('//*[@id="reactLoginListDiv"]/div/div/div/div/div[3]/div/div/div/form/button').click()  # Click login button
+
+# Initialize actionChains. This is used to perform actions like scroling elements into view
+def initActionChains(driver):
+    actions = ActionChains(driver)
+    return actions
+
+
+# Log into BuilderTrend
+def login(login_data, driver):
+    # Go to the login url
+    driver.get(login_data['login_url'])
+
+    # Log in
+    driver.find_element(By.XPATH, '//*[@id="username"]').send_keys(login_data['username'])  # Enter username
+    driver.find_element(By.XPATH, '//*[@id="password"]').send_keys(login_data['password'])  # Enter password
+    driver.find_element(By.XPATH, '//*[@id="reactLoginListDiv"]/div/div/div/div/div[3]/div/div/div/form/button').click()  # Click login button
 
     # Wait for main dashboard to load in
     for i in range(10):
@@ -31,13 +46,15 @@ def login(ld):
         if check_exists('//*[@id="reactMainNavigation"]/div[1]/div/ul/li[2]', driver):
             break
 
-    driver.get('https://buildertrend.net/DailyLogs/DailyLogsList.aspx')  # Go to daily logs page
+# Download the daily logs images
+def downloadImages(driver, actionChains):
+    # Go to daily logs page
+    driver.get('https://buildertrend.net/DailyLogs/DailyLogsList.aspx')
 
     # Select all listed jobs
     WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="reactJobPicker"]/div/div[2]/div/div/div[1]/div/div/li[1]/div/div'))).click()
 
     # Set # items per page to 20 for testing purposes
-    # TODO: Remove this for production.
     # TODO: Need to see what pages are needed or if any specific filter needs to be set up
     WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#DailyLogPagingTop'))).send_keys('20' + Keys.ENTER)
 
@@ -54,26 +71,16 @@ def login(ld):
 
 
     # Click on all image download buttons
-
     thumbnails = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'div.bt-file-viewer--thumbnail-wrapper')))
     for tn in thumbnails:
-        tn_id = tn.get_dom_attribute('id')
-        xpath = '//div[@id="' + tn_id + '"]/a[2]'
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, xpath))).click()
+        tn_id = tn.get_dom_attribute('id')  # Thumbnail id
+        dnload_btn_xpath = '//div[@id="' + tn_id + '"]/a[2]'  # download button xpath
+        dnload_btn = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, dnload_btn_xpath)))  # download button element
+        actionChains.move_to_element(dnload_btn).perform()  # scroll to the download button
+        dnload_btn.click()
 
-    time.sleep(5)
+    # Close chrome
     driver.quit()
-
-'//*[@id="ctl00_ctl00_bodyTagControl"]/div[13]'
-
-'//*[@id="ctl00_ctl00_bodyTagControl"]/div[9]/div[1]/button' # 50 page 1st one
-'//*[@id="ctl00_ctl00_bodyTagControl"]/div[9]/div[1]/button'
-'//*[@id="ctl00_ctl00_bodyTagControl"]/div[9]/div[1]/button'
-'//*[@id="ctl00_ctl00_bodyTagControl"]/div[9]/div[1]/button'
-'//*[@id="ctl00_ctl00_bodyTagControl"]/div[11]/div[1]/button'
-'//*[@id="ctl00_ctl00_bodyTagControl"]/div[10]/div[1]/button'
-'//*[@id="ctl00_ctl00_bodyTagControl"]/div[12]/div[1]/button'
-'//*[@id="ctl00_ctl00_bodyTagControl"]/div[13]/div[1]/button'
 
 
 # Checks if the given xpath is visible to the given driver
@@ -84,5 +91,10 @@ def check_exists(xpath, driver):
         return False
     return True
 
+
+# Main method
 if __name__ == '__main__':
-    login(login_data)
+    driver = initDriver()
+    actionChains = initActionChains(driver)
+    login(login_data, driver)
+    downloadImages(driver, actionChains)
