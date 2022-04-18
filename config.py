@@ -2,7 +2,7 @@ import json
 
 # Data
 init_data = {
-    'bot_path': 'bot.py' 
+    'bot_path': 'bot.py'
 }
 
 login_data = {
