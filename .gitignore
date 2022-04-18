@@ -10,3 +10,6 @@ config.pyc
 
 # Other Venv files/dirs
 pyvenv.cfg
+
+# Config files
+init.json
