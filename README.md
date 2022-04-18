@@ -24,7 +24,6 @@
 
 <br>
 
-***
 ## Mac
 <details>
     <summary>Steps</summary>
