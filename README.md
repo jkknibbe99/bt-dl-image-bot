@@ -5,7 +5,7 @@
     <ol>
         <li>
             Download the zip file<br>
-            <img src="./images/download_zip.png" width="300" height="200">
+            <img src="./images/download_zip.png" width="250" height="200">
         </li>
         <li>Browse to where you downloaded the zip file</li>
         <li>Extract the zip</li>
@@ -31,7 +31,7 @@
     <ol>
         <li>
             Download the zip file<br>
-            <img src="./images/download_zip.png" width="300" height="200">
+            <img src="./images/download_zip.png" width="250" height="200">
         </li>
         <li>Browse to where you downloaded the zip file</li>
         <li>Double click the zip file</li>
@@ -46,7 +46,7 @@
             In the 'Choose Application' dialog box, set Enable to 'All Applications'<br>
             In the search bar, type 'Terminal'<br>
             The Terminal application should appear at or near the top of the list. Double-click it.<br>
-            <img src="./images/run_bash_terminal.png" width="350" height="200">
+            <img src="./images/run_bash_terminal.png" width="525" height="300">
         </li>
         <li>
             A Terminal instance should now appear and the program should load. This may take some time.<br>
