@@ -26,7 +26,10 @@ def initDriver():
         chromedriver_path = (os.path.realpath(__file__)[::-1][(os.path.realpath(__file__)[::-1].find('/')+1):])[::-1] + chromedriver_data['directory'] + 'chromedriver_100_mac'
     # Declare chromedriver
     global driver
-    driver = webdriver.Chrome(executable_path=chromedriver_path,options=chrome_options)
+    if chrome_options is None:
+        driver = webdriver.Chrome(executable_path=chromedriver_path)
+    else:
+        driver = webdriver.Chrome(executable_path=chromedriver_path,options=chrome_options)
 
 
 # Ask user to specify download destination folder
