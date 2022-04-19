@@ -78,6 +78,7 @@ def login():
         if check_exists('//*[@id="reactMainNavigation"]/div[1]/div/ul/li[2]', driver):
             break
 
+
 # Download the daily logs images
 def downloadImages():
     # Go to daily logs page
@@ -111,9 +112,6 @@ def downloadImages():
         actionChains.move_to_element(dnload_btn).perform()  # scroll to the download button
         dnload_btn.click()
 
-    # Close chrome
-    driver.quit()
-
 
 # Checks if the given xpath is visible to the given driver
 def check_exists(xpath, driver):
@@ -124,6 +122,13 @@ def check_exists(xpath, driver):
     return True
 
 
+# Close chrome driver bot
+def quit():
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print('\n\nProgram Finished\n')
+    driver.quit()
+
+
 # Main method
 if __name__ == '__main__':
     askDownloadDestFolder()
@@ -131,3 +136,4 @@ if __name__ == '__main__':
     initActionChains()
     login()
     downloadImages()
+    quit()
