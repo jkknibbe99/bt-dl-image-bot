@@ -1,4 +1,3 @@
-from cgitb import text
 from config import login_data, chromedriver_data
 import time, os
 from tkinter import Tk, Label, Button
