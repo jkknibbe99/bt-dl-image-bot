@@ -13,8 +13,11 @@ from selenium.webdriver.common.action_chains import ActionChains
 
 # Initialize globals
 driver = None
+chrome_options = None
 actionChains = None
 
+
+# Initialize chrome driver
 def initDriver():
     # Get path to chromedriver
     if os.name == 'nt':  # Windows
@@ -22,9 +25,14 @@ def initDriver():
         chromedriver_path = (os.path.realpath(__file__)[::-1][(os.path.realpath(__file__)[::-1].find('\\')+1):])[::-1] + directory + 'chromedriver_100_win.exe'
     else:  # Mac
         chromedriver_path = (os.path.realpath(__file__)[::-1][(os.path.realpath(__file__)[::-1].find('/')+1):])[::-1] + chromedriver_data['directory'] + 'chromedriver_100_mac'
-
     # Declare chromedriver
-    # Ask user to choose the excel file
+    global driver
+    driver = webdriver.Chrome(executable_path=chromedriver_path,options=chrome_options)
+
+
+# Ask user to specify download destination folder
+def askDownloadDestFolder():
+    # Ask user to choose the downloads destination folder
     window = Tk()
     window.title('Select Downloads Destination folder')
     window.geometry('300x300')
@@ -37,11 +45,10 @@ def initDriver():
             downloads_path = downloads_path.replace('/', '\\')
         print(downloads_path)
         window.destroy()
+        global chrome_options
         chrome_options = webdriver.ChromeOptions()
         prefs = {'download.default_directory' : downloads_path}
         chrome_options.add_experimental_option('prefs', prefs)
-        global driver
-        driver = webdriver.Chrome(executable_path=chromedriver_path,options=chrome_options)
     btn = Button(window, text='Select Folder', command=clicked)
     btn.grid(column=0, row=1)
     window.mainloop()
@@ -117,6 +124,7 @@ def check_exists(xpath, driver):
 
 # Main method
 if __name__ == '__main__':
+    askDownloadDestFolder()
     initDriver()
     initActionChains()
     login()
