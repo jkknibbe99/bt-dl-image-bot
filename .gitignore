@@ -9,6 +9,8 @@ lib
 config.pyc
 
 # Other Venv files/dirs
+__pycache_/
+config.cpython-39.pyc
 pyvenv.cfg
 
 # Config files
