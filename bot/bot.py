@@ -1,7 +1,7 @@
+import selenium
 from config import login_data, chromedriver_data
-import time, os
-from tkinter import Tk, Label, Button
-from tkinter import filedialog as fd
+import time, os, sys
+from config import getDataValue
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -12,8 +12,17 @@ from selenium.webdriver.common.action_chains import ActionChains
 
 # Initialize globals
 driver = None
-chrome_options = None
 actionChains = None
+
+FILTER_OPTIONS = {
+    1 : 'Today',
+    2 : 'Today & Yesterday',
+    7 : 'Past 7 Days',
+    14 : 'Past 14 Days',
+    30 : 'Past 30 Days',
+    45 : 'Past 45 Days',
+    60 : 'Past 60 Days',
+}
 
 
 # Initialize chrome driver
@@ -26,34 +35,21 @@ def initDriver():
         chromedriver_path = (os.path.realpath(__file__)[::-1][(os.path.realpath(__file__)[::-1].find('/')+1):])[::-1] + chromedriver_data['directory'] + 'chromedriver_100_mac'
     # Declare chromedriver
     global driver
-    if chrome_options is None:
-        driver = webdriver.Chrome(executable_path=chromedriver_path)
-    else:
-        driver = webdriver.Chrome(executable_path=chromedriver_path,options=chrome_options)
-
-
-# Ask user to specify download destination folder
-def askDownloadDestFolder():
-    # Ask user to choose the downloads destination folder
-    window = Tk()
-    window.title('Select Downloads Destination folder')
-    window.geometry('300x300')
-    lbl = Label(window, text='Select Downloads Destination folder')
-    lbl.grid(column=0, row=0)
-    def clicked():
-        # global downloads_path
-        downloads_path = fd.askdirectory() # show an "Open" dialog box and return the path to the selected file
-        if os.name == 'nt':  # Windows
-            downloads_path = downloads_path.replace('/', '\\')
-        print(downloads_path)
-        window.destroy()
-        global chrome_options
+    chrome_options = None
+    downloads_path = getDataValue('init.json', 'downloads_path')
+    if downloads_path is not None:
         chrome_options = webdriver.ChromeOptions()
         prefs = {'download.default_directory' : downloads_path}
         chrome_options.add_experimental_option('prefs', prefs)
-    btn = Button(window, text='Select Folder', command=clicked)
-    btn.grid(column=0, row=1)
-    window.mainloop()
+    try:
+        if chrome_options is None:
+            driver = webdriver.Chrome(executable_path=chromedriver_path)
+        else:
+            driver = webdriver.Chrome(executable_path=chromedriver_path,options=chrome_options)
+    except selenium.common.exceptions.WebDriverException as e:
+        print(e)
+        print('Current chromedriver_path =', chromedriver_path)
+        sys.exit()
 
 
 # Initialize actionChains. This is used to perform actions like scroling elements into view
@@ -79,10 +75,31 @@ def login():
             break
 
 
-# Download the daily logs images
-def downloadImages():
+# Set filter for daily logs
+def setFilter(num_days):
     # Go to daily logs page
     driver.get('https://buildertrend.net/DailyLogs/DailyLogsList.aspx')
+    # Click to open Filter options
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="reactDailyLogsListDiv"]/div/section/div[2]/form/div/div/div[1]/div/div[1]/div/div/span'))).click()
+    # Click on Date input box
+    date_input = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="8"]')))
+    # date_input.click()
+    # Enter days to filter by
+    if num_days not in FILTER_OPTIONS:
+        msg = 'The parameter num_days entered (' + num_days + ') is not valid. Please enter one of the following: '
+        for key in FILTER_OPTIONS:
+            msg += key + ', '
+        msg = msg[:-2]  # Remove the final comma and space
+        raise ValueError(msg)
+    else:
+        date_input.send_keys(FILTER_OPTIONS[num_days])
+        date_input.send_keys(Keys.ENTER)
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="reactDailyLogsListDiv"]/div/section/div[2]/form/div/div/div[2]/div/div[2]/button[1]/span'))).click()
+
+
+# Download the daily logs images
+def downloadImages():
+    
 
     # Select all listed jobs
     WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="reactJobPicker"]/div/div[2]/div/div/div[1]/div/div/li[1]/div/div'))).click()
@@ -131,9 +148,10 @@ def quit():
 
 # Main method
 if __name__ == '__main__':
-    askDownloadDestFolder()
     initDriver()
     initActionChains()
     login()
-    downloadImages()
+    setFilter(7)
+    # downloadImages()
+    time.sleep(10)
     quit()
