@@ -99,35 +99,61 @@ def setFilter(num_days):
 
 # Download the daily logs images
 def downloadImages():
+    # Find JobList div
+    job_list = driver.find_element(By.XPATH, '//div[contains(@class, "JobList")]')
+
+    # TODO: scroll to bottom of the JobList so that all jobs list items are visible
+
+    # Get all JobListItem elements
+    job_list_items = job_list.find_elements(By.CSS_SELECTOR, 'li.JobListItem:not(.AllJobs)')
+
+    # Iterate through all JobListItems
+    for job_list_item in job_list_items:
+        try:
+            WebDriverWait(driver, 10).until(EC.element_to_be_clickable(job_list_item)).click()
+        except selenium.common.exceptions.ElementClickInterceptedException:
+            driver.execute_script("window.scrollTo(0,document.body.scrollHeight)")
+            WebDriverWait(driver, 10).until(EC.element_to_be_clickable(job_list_item)).click()
+        
     
 
-    # Select all listed jobs
-    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="reactJobPicker"]/div/div[2]/div/div/div[1]/div/div/li[1]/div/div'))).click()
-
     # Set # items per page to 20 for testing purposes
+
     # TODO: Need to see what pages are needed or if any specific filter needs to be set up
-    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#DailyLogPagingTop'))).send_keys('20' + Keys.ENTER)
+    # WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#DailyLogPagingTop'))).send_keys('20' + Keys.ENTER)
 
 
-    # Go into 'View All Attachments' pane
-
-    # dailyLogs = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'div.DailyLogListItem')))
-    # for log in dailyLogs:
-        # bt_file_wrapper = log.find_element_by_xpath("//div[contains(concat(' ', @class, ' '), ' bt-file-wrapper ')]")  # Find the file wrapper element
-        # bt_file_wrapper_id = bt_file_wrapper.get_dom_attribute('id')  # Get the ID of the file wrapper element
-        # view_files_btn_xpath = '//*[@id="' + bt_file_wrapper_id + '"]/div/div/button[2]'  # Create Xpath to the view files button
-        # WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, view_files_btn_xpath))).click()  # Click the view files button
-        # driver.implicitly_wait(3)
+    # For each daily log, go into 'View All Attachments' pane
+    dailyLogs = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'div.DailyLogListItem')))
+    for log in dailyLogs:
+        # bt_file_wrapper = log.find_element(By.XPATH, "//div[contains(concat(' ', @class, ' '), ' bt-file-wrapper ')]")  # Find the file wrapper element
+        bt_file_wrapper = log.find_element(By.XPATH, '//div[contains(@class, "bt-file-wrapper")]')  # Find the file wrapper element
+        bt_file_wrapper_id = bt_file_wrapper.get_dom_attribute('id')  # Get the ID of the file wrapper element
+        view_files_btn_xpath = '//*[@id="' + bt_file_wrapper_id + '"]/div/div/button[2]'  # Create Xpath to the view files button
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, view_files_btn_xpath))).click()  # Click the view files button
+        # TODO: remove \/
+        time.sleep(2)
+        # Should now be within the Daily Log List Attachments Dialog box
+        # Find the dialog box
+        # Grab all the dialog boxes
+        img_dialogs = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.XPATH, '//div[contains(@class, "bt-file-wrapper--dialog")]')))
+        # Grab the last dialog box found (This is the most recently opened one)
+        img_dialog = img_dialogs[len(img_dialogs)-1]  # Need this because everytime a view all attachments dialog box is opened, it creates the html code dynamically
+        img_containers = img_dialog.find_element(By.XPATH, '//div[contains(@class, "bt-file-wrapper")]/div/div/bt-file-viewer/div/div/bt-file-viewer-grid/div/div/div[contains(@class, "bt-file-viewer-grid--item")]')
+        for img_container in img_containers:
+            pass
+        
 
 
     # Click on all image download buttons
-    thumbnails = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'div.bt-file-viewer--thumbnail-wrapper')))
-    for tn in thumbnails:
-        tn_id = tn.get_dom_attribute('id')  # Thumbnail id
-        dnload_btn_xpath = '//div[@id="' + tn_id + '"]/a[2]'  # download button xpath
-        dnload_btn = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, dnload_btn_xpath)))  # download button element
-        actionChains.move_to_element(dnload_btn).perform()  # scroll to the download button
-        dnload_btn.click()
+
+    # thumbnails = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'div.bt-file-viewer--thumbnail-wrapper')))
+    # for tn in thumbnails:
+    #     tn_id = tn.get_dom_attribute('id')  # Thumbnail id
+    #     dnload_btn_xpath = '//div[@id="' + tn_id + '"]/a[2]'  # download button xpath
+    #     dnload_btn = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, dnload_btn_xpath)))  # download button element
+    #     actionChains.move_to_element(dnload_btn).perform()  # scroll to the download button
+    #     dnload_btn.click()
 
 
 # Checks if the given xpath is visible to the given driver
@@ -152,6 +178,6 @@ if __name__ == '__main__':
     initActionChains()
     login()
     setFilter(7)
-    # downloadImages()
-    time.sleep(10)
+    downloadImages()
+    time.sleep(5)
     quit()
