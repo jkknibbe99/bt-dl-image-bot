@@ -1,5 +1,4 @@
 import selenium
-from sqlalchemy import false, true
 from config import login_data, chromedriver_data
 import time, os, sys
 from config import getDataValue
