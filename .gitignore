@@ -14,4 +14,4 @@ config.cpython-39.pyc
 pyvenv.cfg
 
 # Config files
-init.json
+data/
