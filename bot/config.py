@@ -1,19 +1,23 @@
-import json, os
+import json, os, sys
 from pathlib import Path
+from tkinter import Tk, Label, Text, Button, END
+from ask_directory import askForDirectory
 
 # Data
-init_data = {
-    'bot_path': 'bot/bot.py',
-    'downloads_dir': None
+user_data = {
+    'description': 'User Data',
+    'BuilderTrend Username': None,
+    'BuilderTrend Password': None,
+    'Downloads Directory': None
 }
 
 login_data = {
+    'description': 'Login Data',
     'login_url': 'https://buildertrend.net/',
-    'username': 'joshua@engelsmahomes.com',
-    'password': 'Reelbassfisher1'
 }
 
 chromedriver_data = {
+    'description': 'Chromedriver Data',
     'version': 100,
     'directory': '/chromedrivers/'  # This needs to be relative to the bot.py file
 }
@@ -21,15 +25,13 @@ chromedriver_data = {
 
 # Update a data dict value
 def updateDataDict(dict_name: str, key, value):
-    if dict_name == 'init_data':
-        init_data[key] = value
-        return init_data
-    else:
-        raise ValueError('Have not yet implemented functions for dict_name = ' + dict_name)
+    globals()[dict_name][key] = value
+    return globals()[dict_name]
 
 
 # Get a data value
 def getDataValue(filename: str, key):
+    raise NotImplementedError
     if filename.find('.') > -1:
         if filename.endswith('.json'):
             filepath = str(Path(os.path.dirname(__file__)).parent.absolute()) + '/data/' + filename
@@ -40,7 +42,46 @@ def getDataValue(filename: str, key):
 
 
 # Write a JSON from dict
-def writeJSON(data_dict: dict, filename: str):
+def writeJSON(data_dict: dict, filename: str, user_enter_all: bool):
+    # Look through dict for null values
+    if user_enter_all:
+        info_needed = True
+    else:
+        info_needed = False
+        for key in data_dict:
+            if data_dict[key] is None:
+                info_needed = True
+                break
+    while info_needed:
+        info_needed = False
+        for key in data_dict:
+            if (data_dict[key] is None or user_enter_all) and key != 'description':
+                if key.lower().find('directory') > -1:  # If the key needs a path to a directory
+                    data_dict[key] = askForDirectory('Downloads Directory', data_dict[key])
+                else:  # Ask for text input for all other keys
+                    window = Tk()
+                    window.title(data_dict['description'] + ' | ' + key)
+                    window.geometry('400x100')
+                    lbl = Label(window, text='Please enter ' + key + ': ')
+                    txt = Text(window, height = 1, width = 100)
+                    txt.insert(END, data_dict[key]) if data_dict[key] is not None else ''
+                    def setInput(e):
+                        input = txt.get('1.0', 'end-2c')
+                        if input:
+                            data_dict[key] = input
+                            window.destroy()
+                    window.bind('<Return>', setInput)  # Bind Enter button to setInput()
+                    btn = Button(window, text='Submit', command=lambda:setInput(''))
+                    lbl.pack()
+                    txt.pack()
+                    btn.pack()
+                    window.state('zoomed')  # Maximize tk window
+                    txt.focus()
+                    window.mainloop()
+            if data_dict[key] is None or data_dict[key] == '':
+                info_needed = True
+        user_enter_all = False
+
     # Serializing json 
     json_object = json.dumps(data_dict, indent = 4)
   
@@ -68,4 +109,33 @@ def JSONtoDict(filepath: str):
 
 # Main
 if __name__ == '__main__':
-    writeJSON(init_data, 'init')  # write init.json
+    user_json_data = JSONtoDict(str(Path(os.path.dirname(__file__)).parent.absolute()) + '/data/user_data.json')
+    if user_json_data is None:
+        writeJSON(user_data, 'user_data')
+    else:
+        user_data = user_json_data
+        user_data_string = ''
+        for key in user_data:
+            if key == 'description':
+                user_data_string += user_data[key] + '\n\n'
+            else:
+                user_data_string += key + ':   ' + user_data[key] + '\n\n'
+        window = Tk()
+        window.title('User Data')
+        data_lbl = Label(window, text=user_data_string)
+        lbl = Label(window, text='\nWould you like to reset your data?')
+        def yes():
+            window.destroy()
+            writeJSON(data_dict=user_data, filename='user_data', user_enter_all=True)
+        def no(*args):
+            sys.exit()
+        yes_btn = Button(window, text='Yes', command=yes)
+        no_btn = Button(window, text='No', command=no)
+        data_lbl.pack()
+        lbl.pack()
+        yes_btn.pack()
+        no_btn.pack()
+        no_btn.focus()
+        window.bind('<Return>', no)  # Bind Enter button to no()
+        window.state('zoomed')  # Maximize tk window
+        window.mainloop()
