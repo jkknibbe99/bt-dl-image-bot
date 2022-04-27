@@ -5,18 +5,22 @@ from ask_directory import askForDirectory
 
 # Data
 user_data = {
+    'name': 'user_data',
     'description': 'User Data',
     'BuilderTrend Username': None,
     'BuilderTrend Password': None,
-    'Downloads Directory': None
+    'Downloads Directory': None,
+    'Qty Images Per Daily Log': None
 }
 
 login_data = {
+    'name': 'login_data',
     'description': 'Login Data',
     'login_url': 'https://buildertrend.net/',
 }
 
 chromedriver_data = {
+    'name': 'chromedriver_data',
     'description': 'Chromedriver Data',
     'version': 100,
     'directory': '/chromedrivers/'  # This needs to be relative to the bot.py file
@@ -30,15 +34,14 @@ def updateDataDict(dict_name: str, key, value):
 
 
 # Get a data value
-def getDataValue(filename: str, key):
-    raise NotImplementedError
-    if filename.find('.') > -1:
-        if filename.endswith('.json'):
-            filepath = str(Path(os.path.dirname(__file__)).parent.absolute()) + '/data/' + filename
-        else:
-            raise ValueError('Invalid filename given (' + filename + ')')
+def getDataValue(data_dict_name: str, key: str):
+    data_dict = JSONtoDict(str(Path(os.path.dirname(__file__)).parent.absolute()) + '/data/' + data_dict_name + '.json')
+    if data_dict:
+        return data_dict[key]
+    elif globals()[data_dict_name]:
+        return globals()[data_dict_name][key]
     else:
-        filepath = str(Path(os.path.dirname(__file__)).parent.absolute()) + '/data/' + filename + '.json'
+        raise ValueError('No data exists for data_dict_name: ' + data_dict_name)
 
 
 # Write a JSON from dict
@@ -55,7 +58,7 @@ def writeJSON(data_dict: dict, filename: str, user_enter_all: bool):
     while info_needed:
         info_needed = False
         for key in data_dict:
-            if (data_dict[key] is None or user_enter_all) and key != 'description':
+            if (data_dict[key] is None or user_enter_all) and (key != 'description' and key != 'name'):
                 if key.lower().find('directory') > -1:  # If the key needs a path to a directory
                     data_dict[key] = askForDirectory('Downloads Directory', data_dict[key])
                 else:  # Ask for text input for all other keys
@@ -68,6 +71,10 @@ def writeJSON(data_dict: dict, filename: str, user_enter_all: bool):
                     def setInput(e):
                         input = txt.get('1.0', 'end-2c')
                         if input:
+                            try:
+                                input = int(input)
+                            except:
+                                pass
                             data_dict[key] = input
                             window.destroy()
                     window.bind('<Return>', setInput)  # Bind Enter button to setInput()
@@ -111,15 +118,17 @@ def JSONtoDict(filepath: str):
 if __name__ == '__main__':
     user_json_data = JSONtoDict(str(Path(os.path.dirname(__file__)).parent.absolute()) + '/data/user_data.json')
     if user_json_data is None:
-        writeJSON(user_data, 'user_data')
+        writeJSON(user_data, 'user_data', True)
     else:
         user_data = user_json_data
         user_data_string = ''
         for key in user_data:
-            if key == 'description':
+            if key == 'name':
+                pass
+            elif key == 'description':
                 user_data_string += user_data[key] + '\n\n'
             else:
-                user_data_string += key + ':   ' + user_data[key] + '\n\n'
+                user_data_string += key + ':   ' + str(user_data[key]) + '\n\n'
         window = Tk()
         window.title('User Data')
         data_lbl = Label(window, text=user_data_string)
