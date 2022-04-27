@@ -1,10 +1,15 @@
 @ECHO OFF
 
+:: Install Python if necessary
+echo Checking for Python...
+call %~dp0setup_scripts/check_for_python.bat
+
+:: Set up configuration files/data
 if not exist data (
     mkdir data
 )
-
 if not exist %~dp0data/user_data.json (
+    echo Asking for User Data...
     python %~dp0bot/config.py
 )
 
