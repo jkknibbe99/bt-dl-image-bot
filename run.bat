@@ -1,5 +1,9 @@
 @ECHO OFF
 
+if not exist data (
+    mkdir data
+)
+
 if not exist %~dp0data/user_data.json (
     python %~dp0bot/config.py
 )
