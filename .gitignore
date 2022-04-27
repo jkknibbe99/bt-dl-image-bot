@@ -16,3 +16,6 @@ pyvenv.cfg
 
 # Config files
 data/
+
+# Logging files
+status_log.txt
