@@ -27,6 +27,7 @@
 ## Mac
 <details>
     <summary>Steps</summary>
+    <h3 style="color: red;">WARNING: These steps are untested and most likely deprecated!</h4>
     <ol>
         <li>
             Download the zip file<br>
