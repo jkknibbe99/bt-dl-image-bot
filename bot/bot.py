@@ -13,7 +13,8 @@ from config import getDataValue, login_data, chromedriver_data
 # Initialize globals
 driver = None
 actionChains = None
-images_downloaded = False
+reaching_images = False
+start_job_num = -1  # For testing purposes. Lets you start mid-way through the job-list TODO: Make sure it is set to > -1 for production
 
 STATUS_LOG_FILEPATH = os.path.join(Path(os.path.dirname(__file__)).parent.absolute(), 'status_log.txt')
 FILTER_OPTIONS = {
@@ -136,7 +137,7 @@ def dailyLogsExist(job_name: str):
         clearTerminal()
         print('Waiting for loading div...')
         itr += 1
-        if itr > 1000:
+        if itr > 100:
             break
     while True:
         dailyLogs_container = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//div[@id="reactDailyLogsListDiv"]/div/section/div[@class="ListSection react"][3]')))    
@@ -209,13 +210,11 @@ def downloadDailyLogsImages(max_imgs_per_dl):
             actionChains.move_to_element(img_dialog.find_element(By.XPATH, '//div')).click().perform()  # Click the titlebar of the dialog box to make the pane active
             # Click on all image download buttons
             if isinstance(max_imgs_per_dl, int):
-                global images_downloaded
                 if isinstance(img_containers, WebElement) and max_imgs_per_dl > 0:  # If only one image found
                     # Click single image download button
                     dnld_btn = WebDriverWait(img_containers, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a.bt-file-viewer-grid--download')))
                     # TODO: have program check to see if image exists in the file already. If so, do not perform click.
                     actionChains.move_to_element(dnld_btn).click().perform()
-                    images_downloaded = True
                 elif len(img_containers) > 0:  # If multiple images
                     num_to_download = len(img_containers) if len(img_containers) < max_imgs_per_dl else max_imgs_per_dl
                     for i in range(num_to_download):
@@ -224,7 +223,6 @@ def downloadDailyLogsImages(max_imgs_per_dl):
                         dnld_btn = WebDriverWait(img_container, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a.bt-file-viewer-grid--download')))
                         # TODO: have program check to see if image exists in the file already. If so, do not perform click.
                         actionChains.move_to_element(dnld_btn).click().perform()
-                        images_downloaded = True
                 else:  # If unrecognized type returned
                     raise ValueError('The img_containers variable is of type ' + str(type(img_containers)) + '. This type cannot be handled by this program')
             # Click X to close out of the attachements dialog
@@ -232,6 +230,9 @@ def downloadDailyLogsImages(max_imgs_per_dl):
             img_dialog_close = WebDriverWait(driver, 10).until(EC.visibility_of(img_dialog_close))
             while img_dialog.is_displayed():
                 actionChains.move_to_element(img_dialog_close).click().perform()
+            # Confirm that images were reached
+            global reaching_images
+            reaching_images = True
 
 
 # Download all the daily logs images
@@ -256,7 +257,7 @@ def downloadAllImages(number_of_days):
     # Iterate through all JobListItems
     job_name_itr = 0
     for job_list_item in job_list_items:
-        if job_name_itr > 20:  # For testing purposes. Lets you start mid-way through the job-list TODO: Make sure it is set to > -1 for production
+        if job_name_itr > start_job_num:
             try:
                 WebDriverWait(driver, 10).until(EC.element_to_be_clickable(job_list_item)).click()
             except ElementClickInterceptedException:  # If job button not visible, scroll to it and click
@@ -370,7 +371,7 @@ def quit():
 if __name__ == '__main__':
     num_retries = 3  # This is the number of times the program will rerun if no images were downloaded
     itr = 0
-    while not images_downloaded:
+    while not reaching_images:
         try:
             deleteTempDir()  # Just in case it still exists
             initDriver()
