@@ -1,4 +1,4 @@
-# How to Run This Bot
+# Instructions
 ## Windows
 <details>
     <summary>Steps</summary>
