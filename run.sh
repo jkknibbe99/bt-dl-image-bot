@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# TODO: Test
+
 # Only run script if on a Mac
 if [[ $OSTYPE == 'darwin'* ]]; then
   # cd to this script's dir
