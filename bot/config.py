@@ -69,7 +69,7 @@ def writeJSON(data_dict: dict, filename: str, user_enter_all: bool):
                     txt = Text(window, height = 1, width = 100)
                     txt.insert(END, data_dict[key]) if data_dict[key] is not None else ''
                     def setInput(e):
-                        input = txt.get('1.0', 'end-2c')
+                        input = txt.get('1.0', 'end-1c').replace('\n', '')
                         if input:
                             try:
                                 input = int(input)
