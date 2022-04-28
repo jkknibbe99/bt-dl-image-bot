@@ -4,6 +4,10 @@
     <summary>Steps</summary>
     <ol>
         <li>
+            Switch to the zip branch.<br>
+            <img src="./images/zip_branch.png" width="250" height="200">
+        </li>
+        <li>
             Download the zip file<br>
             <img src="./images/download_zip.png" width="250" height="200">
         </li>
