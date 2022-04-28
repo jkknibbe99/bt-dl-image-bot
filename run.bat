@@ -11,8 +11,8 @@ call %~dp0setup/check_for_python.bat && (
 )
 
 :: Set up configuration files/data
-if not exist data (
-    mkdir data
+if not exist %~dp0data (
+    mkdir %~dp0data
 )
 if not exist %~dp0data/user_data.json (
     echo Asking for User Data...
@@ -35,8 +35,14 @@ if exist Scripts (
     echo Virtual environment not created.
     echo Creating Virtual environment now...
     python -m venv .
-    call %~dp0Scripts/activate
-    pip install -r setup/requirements.txt
-    rem run bot
-    python %bot_path%
+    if exists Scripts (
+        call %~dp0Scripts/activate
+        pip install -r setup/requirements.txt
+        rem run bot
+        python %bot_path%
+    ) else (
+        echo Venv creation failed.
+        echo Notify Developer
+        pause
+    )
 )
