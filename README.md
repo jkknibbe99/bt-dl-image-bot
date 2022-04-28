@@ -23,9 +23,7 @@
             A Command Prompt instance should now appear and the program should load. This may take some time.
         </li>
         <li>
-            Depending on if you have Python installed or not, you may see a dialog asking you to allow the python installer to run.<br>
-            Click Repair.<br>
-            <img src="./images/install_python.png" width="300" height="200">
+            If you do not have Python installed, you should see a dialog asking you to install it.
         </li>
         <li>
             Once the program is loaded, you may be asked to fill out some user information like username, password, etc.
@@ -44,7 +42,8 @@
 <br>
 
 ## Mac
-<details>
+Not yet supported.
+<!-- <details>
     <summary>Steps</summary>
     <h3 style="color: red;">WARNING: These steps are untested and most likely deprecated!</h4>
     <ol>
@@ -72,4 +71,4 @@
             Once the program is loaded, the Chrome instance will be created and the bot will run.
         </li>
     </ol>
-</details>
+</details> -->
