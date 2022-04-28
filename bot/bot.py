@@ -259,12 +259,15 @@ def downloadAllImages(number_of_days):
     for job_list_item in job_list_items:
         if job_name_itr > start_job_num:
             try:
+                actionChains.move_to_element(job_list_item).perform()  # Scroll to job button
                 WebDriverWait(driver, 10).until(EC.element_to_be_clickable(job_list_item)).click()
             except ElementClickInterceptedException:  # If job button not visible, scroll to it and click
-                driver.execute_script("window.scrollTo(0,document.body.scrollHeight)")
+                # driver.execute_script("window.scrollTo(0,document.body.scrollHeight)")
                 while True:
                     try:
+                        driver.execute_script("arguments[0].scrollIntoView();", job_list_item)
                         WebDriverWait(driver, 10).until(EC.element_to_be_clickable(job_list_item)).click()
+                        break
                     except ElementClickInterceptedException:
                         pass
             except StaleElementReferenceException:  # If job button element is stale, attempt to refind it
