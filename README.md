@@ -24,7 +24,15 @@
             <img src="./images/install_python.png" width="300" height="200">
         </li>
         <li>
-            Once the program is loaded, the Chrome instance will be created and the bot will run.
+            Once the program is loaded, you may be asked to fill out some user information like username, password, etc.
+        </li>
+        <li>
+            Once user data is filled out correctly, the Chrome instance will be created and the bot will run.
+        </li>
+        <li>
+            If at any point you would like to modify your user data, go into the program folder and locate the configure.bat file.<br>
+            Double click it to confirm/reset your user data.<br>
+            <img src="./images/run_configure.png" width="300" height="200">
         </li>
     </ol>
 </details>
