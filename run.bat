@@ -2,7 +2,13 @@
 
 :: Install Python if necessary
 echo Checking for Python...
-call %~dp0setup/check_for_python.bat
+call %~dp0setup/check_for_python.bat && (
+    rem Python installed
+) || (
+    echo Program shutting down
+    pause
+    goto:eof
+)
 
 :: Set up configuration files/data
 if not exist data (
