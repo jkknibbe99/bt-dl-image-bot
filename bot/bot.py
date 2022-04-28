@@ -1,4 +1,4 @@
-import os, sys, time, shutil
+import os, sys, time, shutil, datetime
 from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -353,6 +353,7 @@ def clearTerminal():
 
 
 def newStatus(message: str):
+    message = str(datetime.datetime.now()) + ' - ' + (message[:message.find('Backtrace:')] if message.find('Backtrace:') > -1 else message)  # Remove Backtrace from error message
     with open(STATUS_LOG_FILEPATH, 'a') as f:
         f.write('\n' + str(message))
 
@@ -375,7 +376,7 @@ if __name__ == '__main__':
             initDriver()
             initActionChains()
             login()
-            downloadAllImages(7)
+            downloadAllImages(number_of_days=7)  # TODO: have number_of_days be a user_data value
         except Exception as e:
             deleteTempDir()
             newStatus(str(e))
