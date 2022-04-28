@@ -41,6 +41,6 @@ goto:START
 
 :DONE
 cls
-echo Wait until the Python installer is complete.
-echo Once it is,
+echo Once the Python installer is complete, rerun the program.
 pause
+EXIT /b 1
