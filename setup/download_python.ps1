@@ -11,21 +11,25 @@ if (-Not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 # Python install variables
 $pythonVersion = "3.10.4"
 $pythonUrl = "https://www.python.org/ftp/python/$pythonVersion/python-$pythonVersion.exe"
-$pythonDownloadPath = "C:\Program Files (x86)\Python\python-$pythonVersion-installer.exe"
-$pythonInstallDir = "C:\Program Files (x86)\Python\Python$pythonVersion"
+$pythonDownloadPath = "C:\Program Files (x86)\Python-installer\python-$pythonVersion-installer.exe"
+$pythonInstallDir = "C:\Program Files (x86)\Python$pythonVersion"
 
-# Create the Python/ directory if needed
-if (Test-Path -Path 'C:\Program Files (x86)\Python') {
+# Create the Python-installer/ directory if needed
+if (Test-Path -Path 'C:\Program Files (x86)\Python-installer') {
     # Path exists
 } else {
     # Create Python dir
-    New-Item -Path 'C:\Program Files (x86)\Python' -ItemType Directory
+    New-Item -Path 'C:\Program Files (x86)\Python-installer' -ItemType Directory
 }
 
 # Run installer
 (New-Object Net.WebClient).DownloadFile($pythonUrl, $pythonDownloadPath)
 & $pythonDownloadPath InstallAllUsers=1 PrependPath=0 Include_test=0 TargetDir=$pythonInstallDir
 # Append to PATH environment variable
-[Environment]::SetEnvironmentVariable("PATH", $Env:PATH + ";" + $pythonInstallDir, [EnvironmentVariableTarget]::Machine)
+if($Env:PATH -like "*$pythonInstallDir*") {
+    # install dir already exists in PATH
+} else {
+    [Environment]::SetEnvironmentVariable("PATH", $Env:PATH + ";" + $pythonInstallDir, [EnvironmentVariableTarget]::Machine)
+}
 
 exit $LASTEXITCODE
