@@ -376,7 +376,7 @@ if __name__ == '__main__':
             initDriver()
             initActionChains()
             login()
-            downloadAllImages(7)
+            downloadAllImages(number_of_days=7)  # TODO: have number_of_days be a user_data value
         except Exception as e:
             deleteTempDir()
             newStatus(str(e))
