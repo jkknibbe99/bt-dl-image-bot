@@ -12,4 +12,4 @@ goto:eof
 :errorNoPython
 echo Python not installed
 echo Installing now...
-Powershell.exe -File %~dp0setup_scripts\download_python.ps1
+Powershell.exe -File %~dp0download_python.ps1
