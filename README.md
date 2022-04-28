@@ -44,7 +44,8 @@
 <br>
 
 ## Mac
-<details>
+Not yet supported.
+<!-- <details>
     <summary>Steps</summary>
     <h3 style="color: red;">WARNING: These steps are untested and most likely deprecated!</h4>
     <ol>
@@ -72,4 +73,4 @@
             Once the program is loaded, the Chrome instance will be created and the bot will run.
         </li>
     </ol>
-</details>
+</details> -->
