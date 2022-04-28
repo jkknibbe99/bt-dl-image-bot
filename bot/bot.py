@@ -17,6 +17,7 @@ reaching_images = False
 start_job_num = -1  # For testing purposes. Lets you start mid-way through the job-list TODO: Make sure it is set to > -1 for production
 
 STATUS_LOG_FILEPATH = os.path.join(Path(os.path.dirname(__file__)).parent.absolute(), 'status_log.txt')
+TESTING_FILEPATH = os.path.join(Path(os.path.dirname(__file__)).parent.absolute(), 'testing.txt')  # TODO: remove after dev
 FILTER_OPTIONS = {
     1 : 'Today',
     2 : 'Today & Yesterday',
@@ -50,6 +51,7 @@ def initDriver():
         else:
             # TODO: executable_path is depricated. Use service object (see info here: https://stackoverflow.com/questions/64717302/deprecationwarning-executable-path-has-been-deprecated-selenium-python)
             driver = webdriver.Chrome(executable_path=chromedriver_path,options=chrome_options)
+            driver.maximize_window()  # Maximise chrome
     except WebDriverException as e:
         print(e)
         print('Current chromedriver_path =', chromedriver_path)
@@ -68,15 +70,61 @@ def login():
     driver.get(login_data['login_url'])
     
     # Log in
-    driver.find_element(By.XPATH, '//*[@id="username"]').send_keys(getDataValue('user_data', 'BuilderTrend Username'))  # Enter username
-    driver.find_element(By.XPATH, '//*[@id="password"]').send_keys(getDataValue('user_data', 'BuilderTrend Password'))  # Enter password
+    driver.find_element(By.XPATH, '//*[@id="username"]').send_keys(getDataValue('user_data', 'BuilderTrend Username'))  # Enter username  TODO: Check for invalid username
+    driver.find_element(By.XPATH, '//*[@id="password"]').send_keys(getDataValue('user_data', 'BuilderTrend Password'))  # Enter password  TODO: Check for invalid password
     driver.find_element(By.XPATH, '//*[@id="reactLoginListDiv"]/div/div/div/div/div[3]/div/div/div/form/button').click()  # Click login button
 
-    # Wait for main dashboard to load in
+    # Wait for main dashboard to load in TODO: use WebDriverWait
     for i in range(10):
         time.sleep(1)
         if check_exists('//*[@id="reactMainNavigation"]/div[1]/div/ul/li[2]', driver):
             break
+
+
+# Download all the daily logs images
+def downloadAllImages(number_of_days):
+    # Create 'temp' folder for temporarily storing images
+    createDir('temp')
+
+    # Go to daily logs page
+    driver.get('https://buildertrend.net/DailyLogs/DailyLogsList.aspx')
+
+    # Find JobList div
+    job_list = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//div[contains(@class, "JobList")]')))
+
+    # Get all JobListItem elements
+    job_list_items = job_list.find_elements(By.CSS_SELECTOR, 'li.JobListItem:not(.AllJobs)')
+    # Get all JobListItem job names
+    job_names = []
+    for job_list_item in job_list_items:
+        job_name = job_list_item.find_element(By.CSS_SELECTOR, 'div.ItemRowJobName').text
+        job_names.append(job_name)
+
+    # Iterate through all JobListItems
+    job_name_itr = 0
+    for job_list_item in job_list_items:
+        if job_name_itr > start_job_num:
+            try:
+                actionChains.move_to_element(job_list_item).perform()  # Scroll to job button
+                WebDriverWait(driver, 10).until(EC.element_to_be_clickable(job_list_item)).click()
+            except ElementClickInterceptedException:  # If job button not visible, scroll to it and click
+                # driver.execute_script("window.scrollTo(0,document.body.scrollHeight)")
+                while True:
+                    try:
+                        driver.execute_script("arguments[0].scrollIntoView();", job_list_item)
+                        WebDriverWait(driver, 10).until(EC.element_to_be_clickable(job_list_item)).click()
+                        break
+                    except ElementClickInterceptedException:
+                        pass
+            except StaleElementReferenceException:  # If job button element is stale, attempt to refind it
+                job_name = job_names[job_list_items.index(job_list_item)]
+                job_list_item = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//div[text() = "' + job_name + '"]')))
+            setFilter(number_of_days)  # Set the filter to day range
+            if dailyLogsExist(job_names[job_name_itr]):
+                downloadDailyLogsImages(max_imgs_per_dl=getDataValue('user_data', 'Qty Images Per Daily Log'))  # Download set number of images from all daily logs
+                moveImgsToFolder(job_names[job_name_itr].replace('/','-').replace('?','_'))
+                clearTempDir()
+        job_name_itr += 1        
 
 
 # Set filter for daily logs
@@ -93,8 +141,11 @@ def setFilter(num_days):
             try:
                 driver.find_element(By.CSS_SELECTOR, 'div.loadingBackground')
             except NoSuchElementException:
-                filter_options.click()
-                break
+                try:
+                    filter_options.click()
+                    break
+                except ElementClickInterceptedException:
+                    pass
         # Find the date input box
         date_input = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="8"]')))
     # Find the current date filter value
@@ -137,8 +188,11 @@ def dailyLogsExist(job_name: str):
         clearTerminal()
         print('Waiting for loading div...')
         itr += 1
-        if itr > 100:  # TODO: look into average number of iterations it takes to see the loading div. This will let me determine a more efficiant max itr
+        if itr > 20:
             break
+    # Iteration count for testing purposes 
+    # with open(TESTING_FILEPATH, 'a') as f:  #TODO: make sure this is commented out for production
+    #     f.write(str(itr) + '\n')  #TODO: make sure this is commented out for production
     while True:
         dailyLogs_container = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//div[@id="reactDailyLogsListDiv"]/div/section/div[@class="ListSection react"][3]')))    
         try:
@@ -160,7 +214,7 @@ def dailyLogsExist(job_name: str):
 
 # On the current screen, downloads all images from daily logs
 def downloadDailyLogsImages(max_imgs_per_dl):
-    # Wait until daily logs load in
+    # Get qty of daily logs
     driver.switch_to.default_content()
     driver.execute_script("window.scrollTo(0,0)")  # Scroll to top of page
     dailyLogs_container = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//div[@id="reactDailyLogsListDiv"]/div/section/div[@class="ListSection react"][3]')))
@@ -233,52 +287,6 @@ def downloadDailyLogsImages(max_imgs_per_dl):
             # Confirm that images were reached
             global reaching_images
             reaching_images = True
-
-
-# Download all the daily logs images
-def downloadAllImages(number_of_days):
-    # Create 'temp' folder for temporarily storing images
-    createDir('temp')
-
-    # Go to daily logs page
-    driver.get('https://buildertrend.net/DailyLogs/DailyLogsList.aspx')
-
-    # Find JobList div
-    job_list = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//div[contains(@class, "JobList")]')))
-
-    # Get all JobListItem elements
-    job_list_items = job_list.find_elements(By.CSS_SELECTOR, 'li.JobListItem:not(.AllJobs)')
-    # Get all JobListItem job names
-    job_names = []
-    for job_list_item in job_list_items:
-        job_name = job_list_item.find_element(By.CSS_SELECTOR, 'div.ItemRowJobName').text
-        job_names.append(job_name)
-
-    # Iterate through all JobListItems
-    job_name_itr = 0
-    for job_list_item in job_list_items:
-        if job_name_itr > start_job_num:
-            try:
-                actionChains.move_to_element(job_list_item).perform()  # Scroll to job button
-                WebDriverWait(driver, 10).until(EC.element_to_be_clickable(job_list_item)).click()
-            except ElementClickInterceptedException:  # If job button not visible, scroll to it and click
-                # driver.execute_script("window.scrollTo(0,document.body.scrollHeight)")
-                while True:
-                    try:
-                        driver.execute_script("arguments[0].scrollIntoView();", job_list_item)
-                        WebDriverWait(driver, 10).until(EC.element_to_be_clickable(job_list_item)).click()
-                        break
-                    except ElementClickInterceptedException:
-                        pass
-            except StaleElementReferenceException:  # If job button element is stale, attempt to refind it
-                job_name = job_names[job_list_items.index(job_list_item)]
-                job_list_item = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//div[text() = "' + job_name + '"]')))
-            setFilter(number_of_days)  # Set the filter to day range
-            if dailyLogsExist(job_names[job_name_itr]):
-                downloadDailyLogsImages(max_imgs_per_dl=getDataValue('user_data', 'Qty Images Per Daily Log'))  # Download set number of images from all daily logs
-                moveImgsToFolder(job_names[job_name_itr].replace('/','-').replace('?','_'))
-                clearTempDir()
-        job_name_itr += 1        
 
 
 # Creates a folder for the given job in the specified download dest dir
