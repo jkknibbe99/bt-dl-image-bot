@@ -23,7 +23,9 @@
             A Command Prompt instance should now appear and the program should load. This may take some time.
         </li>
         <li>
-            If you do not have Python installed, you should see a dialog asking you to install it.
+            If you do not have Python installed, you should see a dialog asking you to install it.<br>
+            If you see one that looks like the image below, click Repair.<br>
+            <img src="./images/install_python.png" width="300" height="200">
         </li>
         <li>
             Once the program is loaded, you may be asked to fill out some user information like username, password, etc.
