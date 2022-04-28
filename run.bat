@@ -2,7 +2,7 @@
 
 :: Install Python if necessary
 echo Checking for Python...
-call %~dp0setup_scripts/check_for_python.bat
+call %~dp0setup/check_for_python.bat
 
 :: Set up configuration files/data
 if not exist data (
@@ -30,7 +30,7 @@ if exist Scripts (
     echo Creating Virtual environment now...
     python -m venv .
     call %~dp0Scripts/activate
-    pip install -r requirements.txt
+    pip install -r setup/requirements.txt
     rem run bot
     python %bot_path%
 )
