@@ -4,8 +4,11 @@ cls
 echo Checking for python...
 
 :: Check for Python Installation
-python --version > NUL
-if errorlevel 1 goto errorNoPython
+python --version && (
+rem python installed
+) || (
+goto:errorNoPython
+)
 
 :: Reaching here means Python is installed.
 echo Python installed
@@ -26,25 +29,18 @@ Powershell.exe -File %~dp0download_python.ps1 && (
 
 :: Wait until python installed
 :START
-if not exist c:\Program Files (x86)\Python GOTO WAIT
+if not exist "c:\Program Files (x86)\Python3.10.4\python.exe" GOTO WAIT
 goto:DONE
 
 :WAIT
 :: pause for 1 second
 cls
-echo Waiting for Python to be installed...
+echo Waiting for Python to begin installing...
 ping 127.0.0.1 > nul
 goto:START
 
 :DONE
-:: Recheck for Python Installation
-python --version > NUL
-if errorlevel 1 goto errorNoPython
-
-:: Reaching here means Python is installed.
-echo Python installed
-goto:eof
-
-:: Python not installed
-:errorNoPython
-EXIT /b 1
+cls
+echo Wait until the Python installer is complete.
+echo Once it is,
+pause
