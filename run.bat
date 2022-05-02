@@ -25,7 +25,7 @@ rem Set bot_path
 set bot_path=%~dp0bot/bot.py
 
 :: First check for Venv
-if exist Scripts (
+if exist %~dp0Scripts (
     echo Scripts directory exists
     echo Running bot...
     call %~dp0Scripts/activate
@@ -40,7 +40,7 @@ if exist Scripts (
 
 :: Second check for Venv
 :VENV_CHECK
-if exist Scripts (
+if exist %~dp0Scripts (
     echo Venv set up
     call %~dp0Scripts/activate
     echo Installing requirements...
