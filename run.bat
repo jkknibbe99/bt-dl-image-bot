@@ -34,7 +34,9 @@ if exist %~dp0Scripts (
 ) else (
     echo Virtual environment not created.
     echo Creating Virtual environment now...
-    python -m venv .
+    set venvpath=%~dp0
+    set venvpath=^"%venvpath:~0,-1%^"
+    python -m venv %venvpath%
     goto:VENV_CHECK
 )
 
