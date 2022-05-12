@@ -7,14 +7,14 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.remote.webelement import WebElement
-from selenium.common.exceptions import WebDriverException, NoSuchElementException, ElementClickInterceptedException, StaleElementReferenceException
+from selenium.common.exceptions import WebDriverException, NoSuchElementException, ElementClickInterceptedException, StaleElementReferenceException, TimeoutException
 from config import getDataValue, login_data, chromedriver_data
 
 # Initialize globals
 driver = None
 actionChains = None
 reaching_images = False
-start_job_num = -1  # For testing purposes. Lets you start mid-way through the job-list TODO: Make sure it is set to > -1 for production
+start_job_num = -1  # For testing purposes. Lets you start mid-way through the job-list TODO: Make sure it is set to < 0 for production
 
 STATUS_LOG_FILEPATH = os.path.join(Path(os.path.dirname(__file__)).parent.absolute(), 'status_log.txt')
 TESTING_FILEPATH = os.path.join(Path(os.path.dirname(__file__)).parent.absolute(), 'testing.txt')  # TODO: remove after dev
@@ -27,6 +27,7 @@ FILTER_OPTIONS = {
     45 : 'Past 45 Days',
     60 : 'Past 60 Days',
 }
+DAILYLOGS_CONTAINER_CSS_SELECTOR = '#reactDailyLogsListDiv .ListSection:nth-child(5)'
 
 
 # Initialize chrome driver
@@ -51,7 +52,7 @@ def initDriver():
         else:
             # TODO: executable_path is depricated. Use service object (see info here: https://stackoverflow.com/questions/64717302/deprecationwarning-executable-path-has-been-deprecated-selenium-python)
             driver = webdriver.Chrome(executable_path=chromedriver_path,options=chrome_options)
-            driver.maximize_window()  # Maximise chrome
+            driver.maximize_window()  # Maximise chrome  TODO: Uncomment once dev finished
     except WebDriverException as e:
         print(e)
         print('Current chromedriver_path =', chromedriver_path)
@@ -72,7 +73,7 @@ def login():
     # Log in
     driver.find_element(By.XPATH, '//*[@id="username"]').send_keys(getDataValue('user_data', 'BuilderTrend Username'))  # Enter username  TODO: Check for invalid username
     driver.find_element(By.XPATH, '//*[@id="password"]').send_keys(getDataValue('user_data', 'BuilderTrend Password'))  # Enter password  TODO: Check for invalid password
-    driver.find_element(By.XPATH, '//*[@id="reactLoginListDiv"]/div/div/div/div/div[3]/div/div/div/form/button').click()  # Click login button
+    driver.find_element(By.CSS_SELECTOR, '#reactLoginListDiv button.Login-Form-SubmitButton').click()  # Click login button
 
     # Wait for main dashboard to load in TODO: use WebDriverWait
     for i in range(10):
@@ -169,7 +170,7 @@ def setFilter(num_days):
                 driver.find_element(By.CSS_SELECTOR, 'div.loadingBackground')
             except NoSuchElementException:
                 # Click Update Results button
-                WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="reactDailyLogsListDiv"]/div/section/div[2]/form/div/div/div[2]/div/div[2]/button[1]/span'))).click()
+                WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#reactDailyLogsListDiv form.FilterContainer button[data-testid="updateResults"]'))).click()
                 break
 
 
@@ -179,7 +180,7 @@ def dailyLogsExist(job_name: str):
     driver.switch_to.default_content()
     itr = 0
     while True:
-        dailyLogs_container = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//div[@id="reactDailyLogsListDiv"]/div/section/div[@class="ListSection react"][3]')))    
+        dailyLogs_container = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, DAILYLOGS_CONTAINER_CSS_SELECTOR)))    
         try:
             dailyLogs_container.find_element(By.XPATH, '//div[contains(@class, "BTLoading")]')        
             break
@@ -194,7 +195,7 @@ def dailyLogsExist(job_name: str):
     # with open(TESTING_FILEPATH, 'a') as f:  #TODO: make sure this is commented out for production
     #     f.write(str(itr) + '\n')  #TODO: make sure this is commented out for production
     while True:
-        dailyLogs_container = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//div[@id="reactDailyLogsListDiv"]/div/section/div[@class="ListSection react"][3]')))    
+        dailyLogs_container = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, DAILYLOGS_CONTAINER_CSS_SELECTOR)))    
         try:
             dailyLogs_container.find_element(By.XPATH, '//div[contains(@class, "BTLoading")]')        
         except NoSuchElementException:
@@ -203,7 +204,7 @@ def dailyLogsExist(job_name: str):
         print('Loading Daily Logs...')
     print('Loading Complete\n', job_name, '\nAccessing Daily Logs...')
     # Check if there are any daily logs
-    dailyLogs_container = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.XPATH, '//div[@id="reactDailyLogsListDiv"]/div/section/div[@class="ListSection react"][3]')))
+    dailyLogs_container = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, DAILYLOGS_CONTAINER_CSS_SELECTOR)))    
     try:
         dailyLogs_container.find_element(By.CSS_SELECTOR, 'div.EmptyState')
     except NoSuchElementException:
@@ -217,7 +218,7 @@ def downloadDailyLogsImages(max_imgs_per_dl):
     # Get qty of daily logs
     driver.switch_to.default_content()
     driver.execute_script("window.scrollTo(0,0)")  # Scroll to top of page
-    dailyLogs_container = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//div[@id="reactDailyLogsListDiv"]/div/section/div[@class="ListSection react"][3]')))
+    dailyLogs_container = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, DAILYLOGS_CONTAINER_CSS_SELECTOR)))    
     dailyLog_qty_elem = WebDriverWait(dailyLogs_container, 10).until(EC.presence_of_element_located((By.XPATH, '//div/div/div/span/span[3]')))
     while True:
         try:
@@ -231,7 +232,7 @@ def downloadDailyLogsImages(max_imgs_per_dl):
         dailyLog_container = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//div[contains(@class, "DailyLogListItem")][' + str(i+1) + ']')))
         try:
             bt_file_wrapper = WebDriverWait(dailyLog_container, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.bt-file-wrapper')))
-        except NoSuchElementException:
+        except (NoSuchElementException, TimeoutException):
             # Daily log has no images attached
             pass
         else:
