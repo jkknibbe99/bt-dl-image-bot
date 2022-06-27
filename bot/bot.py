@@ -43,12 +43,6 @@ def initDriver():
             chromedriver_paths.append((os.path.realpath(__file__)[::-1][(os.path.realpath(__file__)[::-1].find('\\')+1):])[::-1] + directory + 'chromedriver_' + str(MIN_CHROME_VERSION+i) + '_win.exe')
     else:  # Mac
         chromedriver_path = (os.path.realpath(__file__)[::-1][(os.path.realpath(__file__)[::-1].find('/')+1):])[::-1] + chromedriver_data['directory'] + 'chromedriver_100_mac'
-    # Get path to chromedriver
-    if os.name == 'nt':  # Windows
-        directory = chromedriver_data['directory'].replace('/', '\\')
-        chromedriver_path = (os.path.realpath(__file__)[::-1][(os.path.realpath(__file__)[::-1].find('\\')+1):])[::-1] + directory + 'chromedriver_' + str(getDataValue('chromedriver_data', 'version')) + '_win.exe'
-    else:  # Mac
-        chromedriver_path = (os.path.realpath(__file__)[::-1][(os.path.realpath(__file__)[::-1].find('/')+1):])[::-1] + chromedriver_data['directory'] + 'chromedriver_100_mac'
     # Declare chromedriver
     global driver
     chrome_options = None
