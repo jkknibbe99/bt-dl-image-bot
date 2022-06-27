@@ -16,6 +16,7 @@ pyvenv.cfg
 
 # Config files
 data/
+user_data.json
 
 # Logging files
 status_log.txt
