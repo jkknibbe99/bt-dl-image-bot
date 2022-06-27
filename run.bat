@@ -37,11 +37,28 @@ if exist %~dp0Scripts (
     set venvpath=%~dp0
     pause
     python -m venv %venvpath%
-    goto:VENV_CHECK
+    goto:VENV_CHECK_2
 )
 
 :: Second check for Venv
-:VENV_CHECK
+:VENV_CHECK_2
+if exist %~dp0Scripts (
+    echo Venv set up
+    call %~dp0Scripts/activate
+    echo Installing requirements...
+    pip install -r %~dp0setup/requirements.txt
+    cls
+    echo Running bot...
+    python %bot_path%
+) else (
+    echo Virtual environment not created.
+    echo Creating Virtual environment now...
+    python -m venv %~dp0
+    goto:VENV_CHECK_3
+)
+
+:: Third check for Venv
+:VENV_CHECK_3
 if exist %~dp0Scripts (
     echo Venv set up
     call %~dp0Scripts/activate
