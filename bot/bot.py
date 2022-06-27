@@ -7,7 +7,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.remote.webelement import WebElement
-from selenium.common.exceptions import WebDriverException, NoSuchElementException, ElementClickInterceptedException, StaleElementReferenceException, TimeoutException
+from selenium.common.exceptions import WebDriverException, NoSuchElementException, ElementClickInterceptedException, StaleElementReferenceException, TimeoutException, SessionNotCreatedException
 from config import getDataValue, login_data, chromedriver_data
 
 # Initialize globals
@@ -15,6 +15,8 @@ driver = None
 actionChains = None
 reaching_images = False
 start_job_num = -1  # For testing purposes. Lets you start mid-way through the job-list TODO: Make sure it is set to < 0 for production
+
+MIN_CHROME_VERSION = 100  # This is the minimum chrome version. This can be set to x where it is known that the chrome version will not be less than x.
 
 STATUS_LOG_FILEPATH = os.path.join(Path(os.path.dirname(__file__)).parent.absolute(), 'status_log.txt')
 TESTING_FILEPATH = os.path.join(Path(os.path.dirname(__file__)).parent.absolute(), 'testing.txt')  # TODO: remove after dev
@@ -33,6 +35,15 @@ DAILYLOGS_CONTAINER_CSS_SELECTOR = '#reactDailyLogsListDiv .ListSection:nth-chil
 # Initialize chrome driver
 def initDriver():
     # Get path to chromedriver
+    num_chromedrivers = 5  # Num of different chromedrivers to look for
+    if os.name == 'nt':  # Windows
+        directory = chromedriver_data['directory'].replace('/', '\\')
+        chromedriver_paths = []
+        for i in range(num_chromedrivers):
+            chromedriver_paths.append((os.path.realpath(__file__)[::-1][(os.path.realpath(__file__)[::-1].find('\\')+1):])[::-1] + directory + 'chromedriver_' + str(MIN_CHROME_VERSION+i) + '_win.exe')
+    else:  # Mac
+        chromedriver_path = (os.path.realpath(__file__)[::-1][(os.path.realpath(__file__)[::-1].find('/')+1):])[::-1] + chromedriver_data['directory'] + 'chromedriver_100_mac'
+    # Get path to chromedriver
     if os.name == 'nt':  # Windows
         directory = chromedriver_data['directory'].replace('/', '\\')
         chromedriver_path = (os.path.realpath(__file__)[::-1][(os.path.realpath(__file__)[::-1].find('\\')+1):])[::-1] + directory + 'chromedriver_' + str(getDataValue('chromedriver_data', 'version')) + '_win.exe'
@@ -46,17 +57,19 @@ def initDriver():
         chrome_options = webdriver.ChromeOptions()
         prefs = {'download.default_directory' : downloads_path}
         chrome_options.add_experimental_option('prefs', prefs)
-    try:
-        if chrome_options is None:
-            driver = webdriver.Chrome(executable_path=chromedriver_path)
+    for i in range(num_chromedrivers):
+        try:
+            if chrome_options is None:
+                driver = webdriver.Chrome(executable_path=chromedriver_paths[i])
+            else:
+                driver = webdriver.Chrome(executable_path=chromedriver_paths[i],options=chrome_options)
+        except (SessionNotCreatedException, WebDriverException):
+            pass
         else:
-            # TODO: executable_path is depricated. Use service object (see info here: https://stackoverflow.com/questions/64717302/deprecationwarning-executable-path-has-been-deprecated-selenium-python)
-            driver = webdriver.Chrome(executable_path=chromedriver_path,options=chrome_options)
-            driver.maximize_window()  # Maximise chrome  TODO: Uncomment once dev finished
-    except WebDriverException as e:
-        print(e)
-        print('Current chromedriver_path =', chromedriver_path)
-        sys.exit()
+            break
+    if i == num_chromedrivers-1:
+        raise ValueError('No valid chromedrivers could be found. Check the version of chrome that you are running and make sure you have the appropriate chromedriver stored at src/bot/chromedrivers/')
+    driver.maximize_window()  # Maximise chrome
 
 
 # Initialize actionChains. This is used to perform actions like scroling elements into view
