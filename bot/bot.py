@@ -19,7 +19,6 @@ reaching_images = False
 start_job_num = -1  # For testing purposes. Lets you start mid-way through the job-list TODO: Make sure it is set to < 0 for production
 
 STATUS_LOG_FILEPATH = os.path.join(Path(os.path.dirname(__file__)).parent.absolute(), 'status_log.txt')
-TESTING_FILEPATH = os.path.join(Path(os.path.dirname(__file__)).parent.absolute(), 'testing.txt')  # TODO: remove after dev
 FILTER_OPTIONS = {
     1 : 'Today',
     2 : 'Today & Yesterday',
@@ -92,11 +91,8 @@ def login():
     driver.find_element(By.XPATH, '//*[@id="password"]').send_keys(getDataValue('user_data', 'BuilderTrend Password'))  # Enter password  TODO: Check for invalid password
     driver.find_element(By.CSS_SELECTOR, '#reactLoginListDiv button.Login-Form-SubmitButton').click()  # Click login button
 
-    # Wait for main dashboard to load in TODO: use WebDriverWait
-    for i in range(10):
-        time.sleep(1)
-        if check_exists('//*[@id="reactMainNavigation"]/div[1]/div/ul/li[2]', driver):
-            break
+    # Wait for main dashboard to load in
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#reactMainNavigation')))
 
 
 # Download all the daily logs images
@@ -139,8 +135,9 @@ def downloadAllImages(number_of_days):
                 job_list_item = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//div[text() = "' + job_name + '"]')))
             setFilter(number_of_days)  # Set the filter to day range
             if dailyLogsExist(job_names[job_name_itr]):
-                downloadDailyLogsImages(max_imgs_per_dl=getDataValue('user_data', 'Qty Images Per Daily Log'))  # Download set number of images from all daily logs
-                moveImgsToFolder(job_names[job_name_itr].replace('/','-').replace('?','_'))
+                job_folder_name = job_names[job_name_itr].replace('/','-').replace('?','_') 
+                downloadDailyLogsImages(max_imgs_per_dl=getDataValue('user_data', 'Qty Images Per Daily Log'), job_folder_name=job_folder_name)  # Download set number of images from all daily logs
+                moveImgsToFolder(job_folder_name)
                 clearTempDir()
         job_name_itr += 1        
 
@@ -231,7 +228,7 @@ def dailyLogsExist(job_name: str):
 
 
 # On the current screen, downloads all images from daily logs
-def downloadDailyLogsImages(max_imgs_per_dl):
+def downloadDailyLogsImages(max_imgs_per_dl, job_folder_name):
     # Get qty of daily logs
     driver.switch_to.default_content()
     driver.execute_script("window.scrollTo(0,0)")  # Scroll to top of page
@@ -283,18 +280,24 @@ def downloadDailyLogsImages(max_imgs_per_dl):
             # Click on all image download buttons
             if isinstance(max_imgs_per_dl, int):
                 if isinstance(img_containers, WebElement) and max_imgs_per_dl > 0:  # If only one image found
-                    # Click single image download button
-                    dnld_btn = WebDriverWait(img_containers, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a.bt-file-viewer-grid--download')))
-                    # TODO: have program check to see if image exists in the file already. If so, do not perform click.
-                    actionChains.move_to_element(dnld_btn).click().perform()
+                    # Checks to see if image exists in the folder already. If so, do not download.
+                    img_name = WebDriverWait(img_containers, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.bt-file-viewer-grid--title'))).text
+                    img_filepath = os.path.join(getDataValue('user_data', 'Downloads Directory'), job_folder_name, img_name)
+                    if not os.path.isfile(img_filepath):
+                        # Click single image download button
+                        dnld_btn = WebDriverWait(img_containers, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a.bt-file-viewer-grid--download')))
+                        actionChains.move_to_element(dnld_btn).click().perform()
                 elif len(img_containers) > 0:  # If multiple images
                     num_to_download = len(img_containers) if len(img_containers) < max_imgs_per_dl else max_imgs_per_dl
                     for i in range(num_to_download):
-                        # Click on each image's download button
+                        # Checks to see if image exists in the folder already. If so, do not download.
                         img_container = img_containers[i]
-                        dnld_btn = WebDriverWait(img_container, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a.bt-file-viewer-grid--download')))
-                        # TODO: have program check to see if image exists in the file already. If so, do not perform click.
-                        actionChains.move_to_element(dnld_btn).click().perform()
+                        img_name = WebDriverWait(img_container, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.bt-file-viewer-grid--title'))).text
+                        img_filepath = os.path.join(getDataValue('user_data', 'Downloads Directory'), job_folder_name, img_name)
+                        if not os.path.isfile(img_filepath):
+                            # Click on each image's download button
+                            dnld_btn = WebDriverWait(img_container, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a.bt-file-viewer-grid--download')))
+                            actionChains.move_to_element(dnld_btn).click().perform()
                 else:  # If unrecognized type returned
                     raise ValueError('The img_containers variable is of type ' + str(type(img_containers)) + '. This type cannot be handled by this program')
             # Click X to close out of the attachements dialog
