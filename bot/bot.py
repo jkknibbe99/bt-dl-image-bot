@@ -280,24 +280,28 @@ def downloadDailyLogsImages(max_imgs_per_dl, job_folder_name):
             # Click on all image download buttons
             if isinstance(max_imgs_per_dl, int):
                 if isinstance(img_containers, WebElement) and max_imgs_per_dl > 0:  # If only one image found
-                    # Checks to see if image exists in the folder already. If so, do not download.
                     img_name = WebDriverWait(img_containers, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.bt-file-viewer-grid--title'))).text
-                    img_filepath = os.path.join(getDataValue('user_data', 'Downloads Directory'), job_folder_name, img_name)
-                    if not os.path.isfile(img_filepath):
-                        # Click single image download button
-                        dnld_btn = WebDriverWait(img_containers, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a.bt-file-viewer-grid--download')))
-                        actionChains.move_to_element(dnld_btn).click().perform()
+                    # Check if file is a video. If so, do not download
+                    if not img_name.endswith('.MOV') and not img_name.endswith('.mov'):
+                        img_filepath = os.path.join(getDataValue('user_data', 'Downloads Directory'), job_folder_name, img_name)
+                        # Checks to see if image exists in the folder already. If so, do not download.
+                        if not os.path.isfile(img_filepath):
+                            # Click single image download button
+                            dnld_btn = WebDriverWait(img_containers, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a.bt-file-viewer-grid--download')))
+                            actionChains.move_to_element(dnld_btn).click().perform()
                 elif len(img_containers) > 0:  # If multiple images
                     num_to_download = len(img_containers) if len(img_containers) < max_imgs_per_dl else max_imgs_per_dl
                     for i in range(num_to_download):
                         # Checks to see if image exists in the folder already. If so, do not download.
                         img_container = img_containers[i]
                         img_name = WebDriverWait(img_container, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.bt-file-viewer-grid--title'))).text
-                        img_filepath = os.path.join(getDataValue('user_data', 'Downloads Directory'), job_folder_name, img_name)
-                        if not os.path.isfile(img_filepath):
-                            # Click on each image's download button
-                            dnld_btn = WebDriverWait(img_container, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a.bt-file-viewer-grid--download')))
-                            actionChains.move_to_element(dnld_btn).click().perform()
+                        # Check if file is a video. If so, do not download
+                        if not img_name.endswith('.MOV') and not img_name.endswith('.mov'):
+                            img_filepath = os.path.join(getDataValue('user_data', 'Downloads Directory'), job_folder_name, img_name)
+                            if not os.path.isfile(img_filepath):
+                                # Click on each image's download button
+                                dnld_btn = WebDriverWait(img_container, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a.bt-file-viewer-grid--download')))
+                                actionChains.move_to_element(dnld_btn).click().perform()
                 else:  # If unrecognized type returned
                     raise ValueError('The img_containers variable is of type ' + str(type(img_containers)) + '. This type cannot be handled by this program')
             # Click X to close out of the attachements dialog
@@ -384,12 +388,6 @@ def clearTerminal():
     os.system('cls' if os.name == 'nt' else 'clear')
 
 
-def newStatus(message: str):
-    message = str(datetime.datetime.now()) + ' - ' + (message[:message.find('Backtrace:')] if message.find('Backtrace:') > -1 else message)  # Remove Backtrace from error message
-    with open(STATUS_LOG_FILEPATH, 'a') as f:
-        f.write('\n' + str(message))
-
-
 # Close chrome driver bot
 def quit():
     deleteTempDir()
@@ -411,12 +409,13 @@ if __name__ == '__main__':
             downloadAllImages(number_of_days=7)  # TODO: have number_of_days be a user_data value
         except Exception as e:
             deleteTempDir()
-            newStatus(str(e))
-            raise e
+            newStatus('ERROR: ' + str(e), True)
+            quit()
         itr += 1
         if itr == num_retries:
-            newStatus('ERROR: Could not download images after ' + num_retries + ' tries.')
-            break
+            newStatus('ERROR: Could not download images after ' + num_retries + ' tries.', True)
+            quit()
             # TODO: Sometimes, the site gets stuck on a loading page. Set an overall timeout for the program (say if it ran for more than 5 mins, quit)
     time.sleep(1)
+    newStatus('Progam finished successfully', False)
     quit()
