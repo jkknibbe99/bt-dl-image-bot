@@ -26,6 +26,12 @@ chromedriver_data = {
     'directory': '/chromedrivers/'  # This needs to be relative to the bot.py file
 }
 
+status_email_data = {
+    'sender': 'jknibbe.dev@gmail.com',
+    'receiver': 'jknibbe.dev@gmail.com',
+    'password': 'yftnemfhiwpcemvx',
+}
+
 
 # Update a data dict value
 def updateDataDict(dict_name: str, key, value):
