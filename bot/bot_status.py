@@ -23,16 +23,17 @@ def newStatus(message: str, error: bool):
 def main():
     os.system('cls' if os.name == 'nt' else 'clear')  # Clear console
     action = input('* ' + BOT_NAME + ' Status Log *\nWhat would you like to do?\n===================\nDisplay Status Log (D/d)\nClear Status Log (C/c)\n').lower()
-    if action == 'd':
+    if action == 'd':  # Display log
         with open(STATUS_LOG_FILEPATH, 'r') as f:
             lines = f.readlines()
             os.system('cls' if os.name == 'nt' else 'clear')  # Clear console
             # Print all status entries
             for line in lines:
                 None if line == '\n' else print(line)
-    elif action == 'c':
+    elif action == 'c':  # Clear log
         with open(STATUS_LOG_FILEPATH, "w") as f:
             f.write(STATUS_LOG_HEADER)
+        print('Status log cleared')
 
 # Run Main function
 if __name__ == '__main__':
