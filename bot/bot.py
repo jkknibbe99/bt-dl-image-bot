@@ -10,6 +10,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.common.exceptions import WebDriverException, NoSuchElementException, ElementClickInterceptedException, StaleElementReferenceException, TimeoutException, SessionNotCreatedException
 from win32com.client import Dispatch
 from config import getDataValue, login_data, chromedriver_data
+from bot_status import newStatus
 
 # Initialize globals
 driver = None
@@ -137,7 +138,18 @@ def downloadAllImages(number_of_days):
             if dailyLogsExist(job_names[job_name_itr]):
                 job_folder_name = job_names[job_name_itr].replace('/','-').replace('?','_') 
                 downloadDailyLogsImages(max_imgs_per_dl=getDataValue('user_data', 'Qty Images Per Daily Log'), job_folder_name=job_folder_name)  # Download set number of images from all daily logs
-                moveImgsToFolder(job_folder_name)
+                # Tries moving images multiple times (waiting for the images to finish downloading)
+                move_imgs_tries = 10
+                try_count = 0
+                while True:
+                    try:
+                        moveImgsToFolder(job_folder_name)
+                        break
+                    except PermissionError:
+                        time.sleep(1)
+                        try_count += 1
+                        if try_count >= move_imgs_tries: break
+                # Clear the temporary directory contents
                 clearTempDir()
         job_name_itr += 1        
 
