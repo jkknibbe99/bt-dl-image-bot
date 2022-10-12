@@ -29,7 +29,7 @@ chromedriver_data = {
 status_email_data = {
     'sender': 'jknibbe.dev@gmail.com',
     'receiver': 'jknibbe.dev@gmail.com',
-    'password': 'yftnemfhiwpcemvx',
+    'password': 'zhofydxbtkaqcqkj',
 }
 
 

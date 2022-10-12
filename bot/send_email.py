@@ -15,9 +15,5 @@ def sendEmail(subject: str, message: str):
         sender_email = getDataValue('status_email_data', 'sender')
         password = getDataValue('status_email_data', 'password')
         receiver_email = getDataValue('status_email_data', 'receiver')
-        try:
-            server.login(sender_email, password)
-        except smtplib.SMTPAuthenticationError as e:
-            print(e)
-            print(sender_email, password)
+        server.login(sender_email, password)
         server.sendmail(sender_email, receiver_email, message_str)
