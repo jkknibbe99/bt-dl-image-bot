@@ -291,10 +291,11 @@ def downloadDailyLogsImages(max_imgs_per_dl, job_folder_name):
             actionChains.move_to_element(img_dialog.find_element(By.XPATH, '//div')).click().perform()  # Click the titlebar of the dialog box to make the pane active
             # Click on all image download buttons
             if isinstance(max_imgs_per_dl, int):
+                vid_ext = ('.MOV', '.mov', '.MP4', '.mp4', '.WMV', '.wmv', '.AVI', '.avi')
                 if isinstance(img_containers, WebElement) and max_imgs_per_dl > 0:  # If only one image found
                     img_name = WebDriverWait(img_containers, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.bt-file-viewer-grid--title'))).text
                     # Check if file is a video. If so, do not download
-                    if not img_name.endswith('.MOV') and not img_name.endswith('.mov'):
+                    if not img_name.endswith(vid_ext):
                         img_filepath = os.path.join(getDataValue('user_data', 'Downloads Directory'), job_folder_name, img_name)
                         # Checks to see if image exists in the folder already. If so, do not download.
                         if not os.path.isfile(img_filepath):
@@ -308,7 +309,7 @@ def downloadDailyLogsImages(max_imgs_per_dl, job_folder_name):
                         img_container = img_containers[i]
                         img_name = WebDriverWait(img_container, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.bt-file-viewer-grid--title'))).text
                         # Check if file is a video. If so, do not download
-                        if not img_name.endswith('.MOV') and not img_name.endswith('.mov'):
+                        if not img_name.endswith(vid_ext):
                             img_filepath = os.path.join(getDataValue('user_data', 'Downloads Directory'), job_folder_name, img_name)
                             if not os.path.isfile(img_filepath):
                                 # Click on each image's download button
