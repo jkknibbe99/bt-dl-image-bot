@@ -1,4 +1,4 @@
-import os, sys, time, shutil, datetime
+import os, sys, time, shutil
 from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -7,17 +7,25 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.remote.webelement import WebElement
-from selenium.common.exceptions import WebDriverException, NoSuchElementException, ElementClickInterceptedException, StaleElementReferenceException, TimeoutException, SessionNotCreatedException
+from selenium.common.exceptions import WebDriverException, NoSuchElementException, ElementClickInterceptedException, StaleElementReferenceException, TimeoutException
 from win32com.client import Dispatch
 from config import getDataValue, login_data, chromedriver_data
 from bot_status import newStatus
+from chromedrivers.install_latest_chromedriver import installLatestChromedriver
+import chromedriver_autoinstaller
 
 # Initialize globals
 driver = None
 chrome_version = None
+chrome_options = None
 actionChains = None
 reaching_images = False
 start_job_num = -1  # For testing purposes. Lets you start mid-way through the job-list TODO: Make sure it is set to < 0 for production
+
+# Browser to be used
+BROWSER = 'Chrome'  # Options: 'Chrome', 'Undetected Chrome'
+
+use_chromedriver_autoinstaller = True
 
 STATUS_LOG_FILEPATH = os.path.join(Path(os.path.dirname(__file__)).parent.absolute(), 'status_log.txt')
 FILTER_OPTIONS = {
@@ -41,6 +49,7 @@ def get_version_via_com(filename):
         return None
     return version
 
+
 # Set the chrome version global
 def set_chrome_version_global():
     paths = [r"C:\Program Files\Google\Chrome\Application\chrome.exe",
@@ -52,28 +61,61 @@ def set_chrome_version_global():
     global chrome_version
     chrome_version = version
 
-# Initialize chrome driver
-def initDriver():
-    # Get path to chromedriver
-    set_chrome_version_global()
-    if os.name == 'nt':  # Windows
-        directory = chromedriver_data['directory'].replace('/', '\\')
-        chromedriver_path = (os.path.realpath(__file__)[::-1][(os.path.realpath(__file__)[::-1].find('\\')+1):])[::-1] + directory + 'chromedriver_' + str(chrome_version) + '_win.exe'
-    else:  # Mac
-        chromedriver_path = (os.path.realpath(__file__)[::-1][(os.path.realpath(__file__)[::-1].find('/')+1):])[::-1] + chromedriver_data['directory'] + 'chromedriver_100_mac'
-    # Declare chromedriver
-    global driver
-    chrome_options = None
+
+# Sets the path to download images to
+def setDownloadsPath():
     downloads_path = getDataValue('user_data', 'Downloads Directory') + '\\temp'
     if downloads_path is not None:
+        global chrome_options
         chrome_options = webdriver.ChromeOptions()
         prefs = {'download.default_directory' : downloads_path}
         chrome_options.add_experimental_option('prefs', prefs)
-    if chrome_options is None:
-        driver = webdriver.Chrome(executable_path=chromedriver_path)
+
+
+# Initialize chrome driver
+def initDriver():
+    # Declare driver
+    global driver
+    # Get latest chromedriver
+    if use_chromedriver_autoinstaller:
+        chromedriver_autoinstaller.install()    # Check if the current version of chromedriver exists
+                                                # and if it doesn't exist, download it automatically,
+                                                # then add chromedriver to path
+        if BROWSER == 'Undetected Chrome':
+            #Removes navigator.webdriver flag to allow fully undetected
+            option = webdriver.ChromeOptions()
+            option.add_argument('--disable-blink-features=AutomationControlled')
+            #Open Browser
+            driver = webdriver.Chrome(options=option)
+        else:
+            if chrome_options is None:
+                driver = webdriver.Chrome()
+            else:
+                driver = webdriver.Chrome(options=chrome_options)
     else:
-        driver = webdriver.Chrome(executable_path=chromedriver_path,options=chrome_options)
-    driver.maximize_window()  # Maximise chrome
+        # Download and install latest chromedriver
+        installLatestChromedriver()
+        # Try identified version
+        set_chrome_version_global()
+        directory = chromedriver_data['directory'].replace('/', '\\')
+        chromedriver_path = (os.path.realpath(__file__)[::-1][(os.path.realpath(__file__)[::-1].find('\\')+1):])[::-1] + directory + 'chromedriver_' + str(chrome_version) + '_win.exe'
+        try:
+            driver = webdriver.Chrome(executable_path=chromedriver_path)
+        except WebDriverException:
+            # Try latest chromedriver
+            latest = 0
+            for filename in os.listdir('chromedrivers'):
+                if filename.startswith('chromedriver_'): 
+                    if int(filename[13:16]) > latest: latest = int(filename[13:16])
+            chromedriver_path = (os.path.realpath(__file__)[::-1][(os.path.realpath(__file__)[::-1].find('\\')+1):])[::-1] + directory + 'chromedriver_' + str(latest) + '_win.exe'
+            try:
+                if chrome_options is None:
+                    driver = webdriver.Chrome(executable_path=chromedriver_path)
+                else:
+                    driver = webdriver.Chrome(executable_path=chromedriver_path,options=chrome_options)
+            except WebDriverException:
+                raise ValueError('Could not open chrome with given chromedriver.\nChrome version: ' + str(latest) + '\nChromeDriver path: ' + chromedriver_path)
+    driver.maximize_window()
 
 
 # Initialize actionChains. This is used to perform actions like scroling elements into view
@@ -404,9 +446,11 @@ def clearTerminal():
 # Close chrome driver bot
 def quit():
     deleteTempDir()
-    clearTerminal()
+    # clearTerminal()
+    if driver is not None:
+        driver.quit()
     print('\n\nProgram Finished\n')
-    driver.quit()
+    sys.exit()
 
 
 # Main method
@@ -416,6 +460,7 @@ if __name__ == '__main__':
     while not reaching_images:
         try:
             deleteTempDir()  # Just in case it still exists
+            setDownloadsPath()
             initDriver()
             initActionChains()
             login()
