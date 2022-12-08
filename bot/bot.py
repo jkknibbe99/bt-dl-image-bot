@@ -7,12 +7,17 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.remote.webelement import WebElement
-from selenium.common.exceptions import WebDriverException, NoSuchElementException, ElementClickInterceptedException, StaleElementReferenceException, TimeoutException
+from selenium.common.exceptions import WebDriverException, NoSuchElementException, ElementClickInterceptedException, StaleElementReferenceException, TimeoutException, ElementNotInteractableException
 from win32com.client import Dispatch
 from config import getDataValue, login_data, chromedriver_data
 from bot_status import newStatus
 from chromedrivers.install_latest_chromedriver import installLatestChromedriver
 import chromedriver_autoinstaller
+
+# Actions
+raise_error = True  #Production: False
+pause_on_error = True  # Production: False
+send_emails = False  # Production: True
 
 # Initialize globals
 driver = None
@@ -37,8 +42,6 @@ FILTER_OPTIONS = {
     45 : 'Past 45 Days',
     60 : 'Past 60 Days',
 }
-DAILYLOGS_CONTAINER_CSS_SELECTOR = '#reactDailyLogsListDiv .ListSection:nth-child(5)'
-
 
 # Find the current chrome version
 def get_version_via_com(filename):
@@ -165,7 +168,6 @@ def downloadAllImages(number_of_days):
                 actionChains.move_to_element(job_list_item).perform()  # Scroll to job button
                 WebDriverWait(driver, 10).until(EC.element_to_be_clickable(job_list_item)).click()
             except ElementClickInterceptedException:  # If job button not visible, scroll to it and click
-                # driver.execute_script("window.scrollTo(0,document.body.scrollHeight)")
                 while True:
                     try:
                         driver.execute_script("arguments[0].scrollIntoView();", job_list_item)
@@ -199,85 +201,41 @@ def downloadAllImages(number_of_days):
 # Set filter for daily logs
 def setFilter(num_days):
     driver.switch_to.default_content()
-    # Find the date input box
-    try:
-        # date_input = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="8"]')))
-        date_input = driver.find_element(By.XPATH, '//*[@id="8"]')
-    except NoSuchElementException:  # If date input is not visible, try opening the filter options pane
-        # Click to open Filter options
-        filter_options = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'form.FilterContainer span.ant-collapse-arrow')))
-        while True:
-            try:
-                driver.find_element(By.CSS_SELECTOR, 'div.loadingBackground')
-            except NoSuchElementException:
-                try:
-                    filter_options.click()
-                    break
-                except ElementClickInterceptedException:
-                    pass
-        # Find the date input box
-        date_input = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="8"]')))
-    # Find the current date filter value
-    curr_date_input = date_input.find_element(By.XPATH, '../../span[2]').text
-    # If desired filter is already set, do nothing, else, set filter
-    if curr_date_input == 'Past ' + str(num_days) + ' Days':
-        pass
-    else:
-        # Enter days to filter by
-        if num_days not in FILTER_OPTIONS:
-            msg = 'The parameter num_days entered (' + num_days + ') is not valid. Please enter one of the following: '
-            for key in FILTER_OPTIONS:
-                msg += key + ', '
-            msg = msg[:-2]  # Remove the final comma and space
-            raise ValueError(msg)
+    # Find open filter button
+    open_filter_btn = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'button.FilterDrawerButton')))
+    # Open filter sidebar
+    while True:
+        try:
+            open_filter_btn.click()
+        except ElementClickInterceptedException:
+            # Wait for page load
+            WebDriverWait(driver, 10).until_not(EC.presence_of_element_located((By.CSS_SELECTOR, '.loadingBackground')))
+        else:
+            break
+    # Check if filter already set correclty
+    if WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '.FilterDateRange span.ant-select-selection-item'))).text != FILTER_OPTIONS[num_days]:
+        # Set filter
+        # Send keys to date range input
+        date_input = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '.FilterDateRange input')))
         date_input.send_keys(FILTER_OPTIONS[num_days])
         date_input.send_keys(Keys.ENTER)
-        # Check that loading background does not exist
-        while True:
-            try:
-                driver.find_element(By.CSS_SELECTOR, 'div.loadingBackground')
-            except NoSuchElementException:
-                # Click Update Results button
-                WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#reactDailyLogsListDiv form.FilterContainer button[data-testid="updateResults"]'))).click()
-                break
+        # Click apply changes button
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//button[@data-testid="applyFilters"]'))).click()
+    # Close Filter
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//a[@data-testid="closeFilter"]'))).click()
 
 
 # Checks if dailyLogsExist on the current page
 def dailyLogsExist(job_name: str):
-    # Wait until new dailyLogs page loads
-    driver.switch_to.default_content()
-    itr = 0
-    while True:
-        dailyLogs_container = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, DAILYLOGS_CONTAINER_CSS_SELECTOR)))    
-        try:
-            dailyLogs_container.find_element(By.XPATH, '//div[contains(@class, "BTLoading")]')        
-            break
-        except NoSuchElementException:
-            pass
-        clearTerminal()
-        print('Waiting for loading div...')
-        itr += 1
-        if itr > 20:
-            break
-    # Iteration count for testing purposes 
-    # with open(TESTING_FILEPATH, 'a') as f:  #TODO: make sure this is commented out for production
-    #     f.write(str(itr) + '\n')  #TODO: make sure this is commented out for production
-    while True:
-        dailyLogs_container = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, DAILYLOGS_CONTAINER_CSS_SELECTOR)))    
-        try:
-            dailyLogs_container.find_element(By.XPATH, '//div[contains(@class, "BTLoading")]')        
-        except NoSuchElementException:
-            break
-        clearTerminal()
-        print('Loading Daily Logs...')
-    print('Loading Complete\n', job_name, '\nAccessing Daily Logs...')
-    # Check if there are any daily logs
-    dailyLogs_container = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, DAILYLOGS_CONTAINER_CSS_SELECTOR)))    
+    # Check for emptyState
     try:
-        dailyLogs_container.find_element(By.CSS_SELECTOR, 'div.EmptyState')
+        driver.find_element(By.XPATH, '//*[@id="reactDailyLogsListDiv"]/div/div/section/*[contains(@class,"ListSection")]/div/*[contains(@class,"EmptyState")]')
     except NoSuchElementException:
-        return True
+        # Daily logs space not empty, check for daily log containers
+        if len(driver.find_elements(By.XPATH, '//*[@id="reactDailyLogsListDiv"]/div/div/section/*[contains(@class,"ListSection")]/*[contains(@class,"DailyLogListItem")]')) > 0:
+            return True
     else:
+        # No daily logs
         return False
 
 
@@ -286,7 +244,7 @@ def downloadDailyLogsImages(max_imgs_per_dl, job_folder_name):
     # Get qty of daily logs
     driver.switch_to.default_content()
     driver.execute_script("window.scrollTo(0,0)")  # Scroll to top of page
-    dailyLogs_container = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, DAILYLOGS_CONTAINER_CSS_SELECTOR)))    
+    dailyLogs_container = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="reactDailyLogsListDiv"]/div/div/section/*[contains(@class,"ListSection")]/*[contains(@class,"DailyLogListItem")]/..')))    
     dailyLog_qty_elem = WebDriverWait(dailyLogs_container, 10).until(EC.presence_of_element_located((By.XPATH, '//div/div/div/span/span[3]')))
     while True:
         try:
@@ -327,7 +285,8 @@ def downloadDailyLogsImages(max_imgs_per_dl, job_folder_name):
                     if dialog.is_displayed():
                         img_dialog = dialog
             if img_dialog is None:  # If active dialog box could not be found
-                raise ValueError('Could not find the open image dialog box')
+                # Could not find the open image dialog box
+                continue
             # Grab list of all image containers
             img_containers = WebDriverWait(img_dialog, 10).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'div.bt-file-viewer-grid--item')))
             actionChains.move_to_element(img_dialog.find_element(By.XPATH, '//div')).click().perform()  # Click the titlebar of the dialog box to make the pane active
@@ -356,7 +315,10 @@ def downloadDailyLogsImages(max_imgs_per_dl, job_folder_name):
                             if not os.path.isfile(img_filepath):
                                 # Click on each image's download button
                                 dnld_btn = WebDriverWait(img_container, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a.bt-file-viewer-grid--download')))
-                                actionChains.move_to_element(dnld_btn).click().perform()
+                                try:
+                                    actionChains.move_to_element(dnld_btn).click().perform()
+                                except ElementNotInteractableException:
+                                    pass
                 else:  # If unrecognized type returned
                     raise ValueError('The img_containers variable is of type ' + str(type(img_containers)) + '. This type cannot be handled by this program')
             # Click X to close out of the attachements dialog
@@ -467,11 +429,15 @@ if __name__ == '__main__':
             downloadAllImages(number_of_days=7)  # TODO: have number_of_days be a user_data value
         except Exception as e:
             deleteTempDir()
-            newStatus('ERROR: ' + str(e), True)
+            if pause_on_error: 
+                print(e)
+                input('Press ENTER...')
+            if raise_error: raise e
+            if send_emails: newStatus('ERROR: ' + str(e), True)
             quit()
         itr += 1
         if itr == num_retries:
-            newStatus('ERROR: Could not download images after ' + num_retries + ' tries.', True)
+            if send_emails: newStatus('ERROR: Could not download images after ' + num_retries + ' tries.', True)
             quit()
             # TODO: Sometimes, the site gets stuck on a loading page. Set an overall timeout for the program (say if it ran for more than 5 mins, quit)
     time.sleep(1)
