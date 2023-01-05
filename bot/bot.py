@@ -229,7 +229,7 @@ def setFilter(num_days):
         # Click apply changes button
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//button[@data-testid="applyFilters"]'))).click()
     # Close Filter
-    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//a[@data-testid="closeFilter"]'))).click()
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@data-testid="closeFilter"]'))).click()
 
 
 # Checks if dailyLogsExist on the current page
