@@ -15,9 +15,9 @@ from chromedrivers.install_latest_chromedriver import installLatestChromedriver
 import chromedriver_autoinstaller
 
 # Actions
-raise_error = True  #Production: False
+raise_error = False  #Production: False
 pause_on_error = False  # Production: False
-send_emails = False  # Production: True
+send_emails = True  # Production: True
 
 # Initialize globals
 driver = None
