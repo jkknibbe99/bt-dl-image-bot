@@ -133,9 +133,11 @@ def login():
     driver.get(login_data['login_url'])
     
     # Log in
-    driver.find_element(By.XPATH, '//*[@id="username"]').send_keys(getDataValue('user_data', 'BuilderTrend Username'))  # Enter username  TODO: Check for invalid username
-    driver.find_element(By.XPATH, '//*[@id="password"]').send_keys(getDataValue('user_data', 'BuilderTrend Password'))  # Enter password  TODO: Check for invalid password
-    driver.find_element(By.CSS_SELECTOR, '#reactLoginListDiv button.Login-Form-SubmitButton').click()  # Click login button
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#username'))).send_keys(getDataValue('user_data', 'BuilderTrend Username'))  # Enter username  TODO: Check for invalid username
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#password'))).send_keys(getDataValue('user_data', 'BuilderTrend Password'))  # Enter password  TODO: Check for invalid password
+    # Click login button
+    login_btn = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#reactLoginListDiv button.Login-Form-SubmitButton')))
+    actionChains.move_to_element(login_btn).click().perform()
 
     # Wait for main dashboard to load in
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#reactMainNavigation')))
