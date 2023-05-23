@@ -168,6 +168,9 @@ def downloadAllImages(number_of_days):
         if job_name_itr > start_job_num:
             try:
                 actionChains.move_to_element(job_list_item).perform()  # Scroll to job button
+            except Exception as e:
+                pass
+            try:
                 WebDriverWait(driver, 10).until(EC.element_to_be_clickable(job_list_item)).click()
             except ElementClickInterceptedException:  # If job button not visible, scroll to it and click
                 while True:
@@ -180,6 +183,8 @@ def downloadAllImages(number_of_days):
             except StaleElementReferenceException:  # If job button element is stale, attempt to refind it
                 job_name = job_names[job_list_items.index(job_list_item)]
                 job_list_item = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//div[text() = "' + job_name + '"]')))
+            except Exception:
+                continue
             setFilter(number_of_days)  # Set the filter to day range
             try:
                 WebDriverWait(driver, 0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.BTLoading')))  # Look for loading div
