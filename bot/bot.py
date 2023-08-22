@@ -234,7 +234,8 @@ def setFilter(num_days):
         date_input.send_keys(FILTER_OPTIONS[num_days])
         date_input.send_keys(Keys.ENTER)
     # Click apply changes button
-    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//button[@data-testid="applyFilters"]'))).click()
+    applyBtn = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//button[@data-testid="applyFilters"]')))
+    actionChains.move_to_element(applyBtn).move_by_offset(-10, 0).click().perform()
     # Close Filter
     WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@data-testid="closeFilter"]'))).click()
 
@@ -258,8 +259,11 @@ def downloadDailyLogsImages(max_imgs_per_dl, job_folder_name):
     # Get qty of daily logs
     driver.switch_to.default_content()
     driver.execute_script("window.scrollTo(0,0)")  # Scroll to top of page
-    dailyLogs_container = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#reactDailyLogsListDiv')))    
-    dailyLog_qty_elem = WebDriverWait(dailyLogs_container, 10).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '.BTPagination .range span')))[-1]
+    dailyLogs_container = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#root .ListSection')))    
+    try:
+        dailyLog_qty_elem = WebDriverWait(driver, 2).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '.BTPagination .range span')))[2]
+    except TimeoutException:
+        return
     while True:
         try:
             dailyLog_qty_elem.click()
